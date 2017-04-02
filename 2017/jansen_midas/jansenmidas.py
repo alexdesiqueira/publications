@@ -16,51 +16,54 @@ def matthewscc():
 from scipy import ndimage
 from scipy import signal
 from skimage.color import rgb2gray
+from skimage.util import img_as_bool
 import numpy as np
 
 
 def atrous_algorithm(vector, level=3):
     '''
-    Applies i levels of the a trous algorithm on the vector vec.
+    Applies i levels of the a trous algorithm on vector.
     '''
-    if i == 0:
-        output = np.copy(vec)
+    if level == 0:
+        output = np.copy(vector)
     else:
-        m = vec.size
-        output = np.zeros(m+(2**i-1)*(m-1))
+        rows = vector.size
+        output = np.zeros(rows + (2**level - 1) * (rows - 1))
         # zeroes array depends on vector size and starlet level
         k = 0
-        for j in range(0, m+(2**i-1)*(m-1), (2**i-1)+1):
-            output[j] = vec[k]
+        for j in range(0,
+                       rows + (2**level - 1)*(rows-1),
+                       (2**level - 1) + 1):
+            output[j] = vector[k]
             k += 1
 
     # normalization
-    output = np.atleast_2d(output)  # 2D vectors requires less effort
+    output = np.atleast_2d(output)  # 2D vectors require less effort
 
     return output
 
 
-def mlssaux(image, detail, initial_level, level):
+def mlss_auxiliar(image, detail, initial_level, level):
     '''
     '''
-    sum_aux = 0
+    sum_details = 0
 
     for i in range(initial_level, level):
-        ratio = 255/(detail[i].max())
-        temp = np.array(ratio*detail[i], np.uint8)
-        sum_aux = sum_aux + temp
+        temp = detail[i] * (image.max()/detail[i].max())
+        sum_details += temp
 
-    aux = np.array(sum_aux, dtype=np.uint8)
     # possivelmente normalizar aqui
 
-    output = np.array((aux != 0), dtype=np.uint8)*255
+    # output = np.array((sum_aux != 0), dtype=np.uint8)*255
+
+    output = img_as_bool(sum_details)
 
     return output
 
 
-def starlet(image, L=6):
+def starlet(image, level=6):
     '''
-    Applies L levels of the starlet wavelet transform on the image image.
+    Applies level levels of the starlet wavelet transform on image.
     '''
 
     # preliminar vars
@@ -73,10 +76,10 @@ def starlet(image, L=6):
             print('Sorry. Data type not understood')
             raise
 
-    # resulting vectors
+    # resulting vector
     m, n = image.shape
-    approx = np.empty([L, m, n], float)
-    detail = np.empty([L, m, n], float)
+    approx = np.empty([level, m, n], float)
+    detail = np.empty([level, m, n], float)
 
     h1D_filter = np.array([1, 4, 6, 4, 1])*(1./16)
 
@@ -89,9 +92,9 @@ def starlet(image, L=6):
     aux_approx = np.pad(image, (par, par), 'symmetric')
 
     # starlet application
-    for level in range(L):
+    for level in range(level):
         prev_image = aux_approx
-        h2D_filter = atrousalg(h1D_filter, level)
+        h2D_filter = atrous_algorithm(h1D_filter, level)
 
         ''' approximation and detail coefficients '''
         aux_approx = signal.fftconvolve(prev_image, h2D_filter,
@@ -125,10 +128,10 @@ def mlss(image, initial_level=2, level=6):
     # segmentation
     print('Processing segmentation...')
     for level in range(initial_level, level):
-        print('Level: %s' % str(level))
-        result[level] = mlssaux(image,
-                                detail[0:level],
-                                initial_level,
-                                level)
+        print('level: %s' % str(level))
+        result[level] = mlss_auxiliar(image,
+                                      detail[0:level],
+                                      initial_level,
+                                      level)
 
     return detail, result
