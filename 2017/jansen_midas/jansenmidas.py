@@ -24,6 +24,7 @@ def atrous_algorithm(vector, level=3):
     '''
     Applies i levels of the a trous algorithm on vector.
     '''
+
     if level == 0:
         output = np.copy(vector)
     else:
@@ -77,19 +78,19 @@ def starlet(image, level=6):
             raise
 
     # resulting vector
-    m, n = image.shape
-    approx = np.empty([level, m, n], float)
-    detail = np.empty([level, m, n], float)
+    rows, cols = image.shape
+    approx = np.zeros([level, rows, cols])
+    detail = np.zeros([level, rows, cols])
 
     h1D_filter = np.array([1, 4, 6, 4, 1])*(1./16)
 
     # mirroring parameter: lower pixel number
-    if m > n:
-        par = n
+    if rows > cols:
+        param = cols
     else:
-        par = m
+        param = rows
 
-    aux_approx = np.pad(image, (par, par), 'symmetric')
+    aux_approx = np.pad(image, (param, param), 'symmetric')
 
     # starlet application
     for level in range(level):
@@ -102,8 +103,8 @@ def starlet(image, level=6):
         aux_detail = prev_image - aux_approx
 
         ''' mirroring correction '''
-        approx[level] = aux_approx[par:m+par, par:n+par]
-        detail[level] = aux_detail[par:m+par, par:n+par]
+        approx[level] = aux_approx[param:rows+param, param:cols+param]
+        detail[level] = aux_detail[param:rows+param, param:cols+param]
 
     return approx, detail
 
