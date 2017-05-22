@@ -8,4 +8,4 @@
 
 <sup>3</sup> _Departamento de Matemática e Computação, FCT, UNESP - Univ Estadual Paulista_
 
-[arXiv](https://arxiv.org/abs/1604.05921)
+* This paper is available on: [[arXiv]](https://arxiv.org/abs/1604.05921)
