@@ -7,3 +7,5 @@
 <sup>2</sup> _Departamento de Física, Química e Biologia, FCT, UNESP - Univ Estadual Paulista_
 
 <sup>3</sup> _Departamento de Matemática e Computação, FCT, UNESP - Univ Estadual Paulista_
+
+[arxiv](https://arxiv.org/abs/1604.05921)
