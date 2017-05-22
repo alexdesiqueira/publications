@@ -8,4 +8,5 @@
 
 <sup>3</sup> _Departamento de Matemática e Computação, FCT, UNESP - Univ Estadual Paulista_
 
-This folder contains the figures for testing the Supplementary Material.
+
+* This folder contains the figures to test the Supplementary Material.
