@@ -1,0 +1,24 @@
+MAG1:
+
+img1 -> FT-Lab_19.07.385.MAG1
+img2 -> FT-Lab_19.07.386.MAG1
+img3 -> FT-Lab_19.07.387.MAG1
+img4 -> FT-Lab_19.07.388.MAG1
+img5 -> FT-Lab_19.07.389.MAG1
+img6 -> FT-Lab_19.07.390.MAG1
+img7 -> FT-Lab_19.07.391.MAG1
+img8 -> FT-Lab_19.07.392.MAG1
+img19 -> FT-Lab_19.07.MAG1
+
+MAG2:
+
+img9 -> FT-Lab_19.07.393.MAG2
+img10 -> FT-Lab_19.07.394.MAG2
+img11 -> FT-Lab_19.07.395.MAG2
+img12 -> FT-Lab_19.07.396.MAG2
+img13 -> FT-Lab_19.07.397.MAG2
+img14 -> FT-Lab_19.07.398.MAG2
+img15 -> FT-Lab_19.07.399.MAG2
+img16 -> FT-Lab_19.07.400.MAG2
+img17 -> FT-Lab_19.07.403.MAG2
+img18 -> FT-Lab_19.07.404.MAG2

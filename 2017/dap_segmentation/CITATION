@@ -1,0 +1,17 @@
+To cite this code and the support files in publications, please use:
+
+A.F. de Siqueira, W.M. Nakasuga, S.G. de Oliveira, R. Jonckheere and L.
+Ratschbacher. Segmentation of nearly isotropic overlapped tracks in
+photomicrographs using successive erosions as watershed markers, JOURNAL,
+VOL, NUMBER, 2017.
+
+A BibTeX entry for LaTeX users is
+
+@article{DESIQUEIRA2017,
+    author = {Alexandre Fioravante de Siqueira and Wagner Massayuki Nakasuga and Sandro Guedes de Oliveira and Raymond Jonckheere and Lothar Ratschbacher},
+    title = {Segmentation of nearly isotropic overlapped tracks in photomicrographs using successive erosions as watershed markers},
+    journal = {},
+    doi = {}
+    year = {2017},
+    url = {},
+}
