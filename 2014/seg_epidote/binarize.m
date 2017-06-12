@@ -7,10 +7,6 @@
 %% method for segmentation of fission tracks in epidote crystal
 %% photomicrographs, based on starlet wavelets'.
 %%
-%%  This file is part of the supplementary material to 'An automatic 
-%% method for segmentation of fission tracks in epidote crystal 
-%% photomicrographs, based on starlet wavelets'.
-%%
 %% This program is distributed in the hope that it will be useful,
 %% but WITHOUT ANY WARRANTY; without even the implied warranty of
 %% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -19,7 +15,7 @@
 %% You should have received a copy of the GNU General Public License
 %% along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%
-%%    * Authors: 
+%%    * Authors:
 %% Alexandre Fioravante de Siqueira, siqueiraaf@gmail.com
 %% Wagner Massayuki Nakasuga, wamassa@gmail.com
 %% Aylton Pagamisse, aylton@fct.unesp.br
@@ -36,7 +32,7 @@
 %%
 %%  Output: OUT, binarized image output.
 %%
-%%    * Other files required: main.m, confusionmatrix.m, mattewscc.m, 
+%%    * Other files required: main.m, confusionmatrix.m, mattewscc.m,
 %% starlet.m, twodimfilt.m, xtracttracks.m
 %%
 %%    * Please cite:
@@ -46,6 +42,7 @@
 %% fission tracks in epidote crystal photomicrographs. Computers and
 %% Geosciences, 69, 55–61. https://doi.org/10.1016/j.cageo.2014.04.008
 %%
+
 
 function OUT = binarize(IMG)
 
