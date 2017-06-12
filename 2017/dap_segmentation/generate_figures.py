@@ -22,7 +22,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with 'Segmentation of nearly isotropic overlapped tracks in
 photomicrographs using successive erosions as watershed markers -
-Supplementary Material'.  If not, see <http://www.gnu.org/licenses/>.
+Supplementary Material'. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from itertools import chain, product
