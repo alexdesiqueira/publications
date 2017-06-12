@@ -6,8 +6,6 @@
 
 <sup>2</sup> _DMC - Departamento de Matemática e Computação, FCT - Faculdade de Ciências e Tecnologia, UNESP - Univ Estadual Paulista_
 
-* This paper is available on: [[CAGEO]](https://doi.org/10.1016/j.cageo.2014.04.008) [[arXiv]](https://arxiv.org/abs/1602.03995)
-
 ```
 Copyright (C) 2014 Alexandre Fioravante de Siqueira
 
@@ -53,6 +51,8 @@ Correlation Coefficient for IMG and IMGGT in each level (MCC).
     * Required files: main.m, binarize.m, confusionmatrix.m,
 mattewscc.m, starlet.m, twodimfilt.m, xtracttracks.m
 ```
+
+* This paper is available on: [[CAGEO]](https://doi.org/10.1016/j.cageo.2014.04.008) [[arXiv]](https://arxiv.org/abs/1602.03995)
 
 **Please cite:**
 
