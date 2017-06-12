@@ -52,7 +52,7 @@ Correlation Coefficient for IMG and IMGGT in each level (MCC).
 mattewscc.m, starlet.m, twodimfilt.m, xtracttracks.m
 ```
 
-* This paper is available on: [[CAGEO]](https://doi.org/10.1016/j.cageo.2014.04.008) [[arXiv]](https://arxiv.org/abs/1602.03995)
+* This paper is available on: [[CAGEO]](https://doi.org/10.1016/j.cageo.2014.04.008) [[arXiv]](https://arxiv.org/abs/1602.03995).
 
 **Please cite:**
 
