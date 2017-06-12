@@ -27,13 +27,17 @@ Supplementary Material'.  If not, see <http://www.gnu.org/licenses/>.
 
 from itertools import chain, product
 from matplotlib import mlab
-from scipy.ndimage.morphology import binary_fill_holes
+from scipy.ndimage.morphology import (binary_fill_holes,
+                                      distance_transform_edt)
 from scipy.stats import norm
 from skimage.filters import threshold_isodata
 from skimage.io import imread
+from skimage.measure import label
+from skimage.morphology import binary_erosion, disk, watershed
 from skimage.segmentation import clear_border
 
 import desiqueira2017 as ds
+from matplotlib.animation import ArtistAnimation
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
@@ -54,6 +58,104 @@ default_fontsize = 15
 
 # Ignoring warnings.
 warnings.filterwarnings('ignore')
+
+
+def figure_1():
+    """
+    Figure 1: WUSEM algorithm application in an input image. First, the
+    image is binarized using the ISODATA threshold. Then, the image is
+    eroded using initial radius (r0) and iterative radius (∆r) equal to
+    1 and 1 respectively, to ease visualization. The process continues
+    until the eroded image has regions in it. All erosions are summed,
+    and the result is labeled; each labeled track receives a color from
+    the nipy_spectral colormap. Finally, the function enumerate_objects()
+    is used to number the found tracks. Final results are shown to r0
+    and ∆r equal to 25 and 2, respectively. Animation also available at
+    https://youtu.be/gYKbqMEOhB0.
+    """
+
+    image_animation = []
+
+    img_orig = imread(('orig_figures/dataset_01/Kr-78_4,5min/K0_incid/'
+                       'K0_incid4,5min_1.bmp'), as_grey=True)
+
+    fig, ax = plt.subplots(figsize=(15, 10), ncols=1, nrows=1,
+                           tight_layout=True)
+    ax.set_aspect('equal')
+
+    # 1st image: original photomicrograph.
+    curr_frame = ax.imshow(img_orig, cmap='gray')
+    for i in range(10):
+        image_animation.append([curr_frame])
+
+    # 2nd image: binary image.
+    aux = img_orig < threshold_isodata(img_orig)
+    image = clear_border(binary_fill_holes(aux))
+    curr_frame = ax.imshow(image, cmap='gray')
+    for i in range(10):
+        image_animation.append([curr_frame])
+
+    rows, cols = image.shape
+    distance = distance_transform_edt(image)
+
+    # following images: erosions.
+    initial_radius, delta_radius = 1, 1
+    img_labels = np.zeros((rows, cols))
+    curr_radius = initial_radius
+
+    while True:
+        erod_aux = binary_erosion(image, selem=disk(curr_radius))
+        curr_frame = ax.imshow(erod_aux, cmap='gray')
+        image_animation.append([curr_frame])
+
+        if erod_aux.min() == erod_aux.max():
+            break
+
+        markers = label(erod_aux)
+        curr_labels = watershed(-distance,
+                                markers,
+                                mask=image)
+        img_labels += curr_labels
+        curr_radius += delta_radius
+
+    # following image: chosen segmentation.
+    initial_radius, delta_radius = 25, 2
+    img_labels = np.zeros((rows, cols))
+    curr_radius = initial_radius
+
+    while True:
+        erod_aux = binary_erosion(image, selem=disk(curr_radius))
+
+        if erod_aux.min() == erod_aux.max():
+            break
+
+        markers = label(erod_aux)
+        curr_labels = watershed(-distance,
+                                markers,
+                                mask=image)
+        img_labels += curr_labels
+        curr_radius += delta_radius
+
+    # next image: colored image.
+    img_labels = label(img_labels)
+    curr_frame = ax.imshow(img_labels, cmap='nipy_spectral')
+    for i in range(10):
+        image_animation.append([curr_frame])
+
+    # last image: numbered image.
+    img_number = ds.enumerate_objects(img_orig,
+                                      img_labels,
+                                      font_size=30)
+
+    curr_frame = ax.imshow(img_number)
+    for i in range(10):
+        image_animation.append([curr_frame])
+
+    # Figure 1.
+    ani = ArtistAnimation(fig, image_animation, interval=350, blit=True)
+    ani.save('Fig_1.mp4', bitrate=-1, codec='libx264')
+
+    return None
 
 
 def figure_4():
