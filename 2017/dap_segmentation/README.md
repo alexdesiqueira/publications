@@ -5,3 +5,5 @@
 <sup>1</sup> _Departamento de Raios Cósmicos e Cronologia, IFGW, University of Campinas_
 
 <sup>2</sup> _Institut für Geologie, TU Bergakademie Freiberg_
+
+* This paper is available on: [[arXiv]](https://arxiv.org/abs/1602.03995)
