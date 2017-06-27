@@ -27,6 +27,7 @@ Supplementary Material'. If not, see <http://www.gnu.org/licenses/>.
 
 from itertools import chain, product
 from matplotlib import mlab
+from matplotlib.animation import ArtistAnimation
 from scipy.ndimage.morphology import (binary_fill_holes,
                                       distance_transform_edt)
 from scipy.stats import norm
@@ -37,7 +38,7 @@ from skimage.morphology import binary_erosion, disk, watershed
 from skimage.segmentation import clear_border
 
 import desiqueira2017 as ds
-from matplotlib.animation import ArtistAnimation
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
