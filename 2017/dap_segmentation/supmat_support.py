@@ -28,14 +28,16 @@ Supplementary Material'. If not, see <http://www.gnu.org/licenses/>.
 from itertools import product
 from matplotlib.ticker import MultipleLocator
 from scipy.ndimage.morphology import binary_fill_holes
+from skimage.color import rgb2gray
 from skimage.filters import threshold_isodata
-from skimage.io import imread_collection
+from skimage.io import ImageCollection, imread, imread_collection
 from skimage.segmentation import clear_border
 
 import desiqueira2017 as ds  # functions presented in this study
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import pandas as pd
 import statistics as stats
 
 
@@ -69,8 +71,8 @@ def generating_results_dataset1(base_path='.', save_images=False):
     minutes = ['4,5min', '8,5min']
 
     for m in minutes:
-        orig_path = 'orig_figures/Kr-78_' + m + '/'
-        save_path = 'res_figures/Kr-78_' + m + '/'
+        orig_path = 'orig_figures/dataset_01/Kr-78_' + m + '/'
+        save_path = 'res_figures/dataset_01/Kr-78_' + m + '/'
 
         # preparing the file to receive data.
         file = open(base_path + 'autoincid_Kr-78_' + m + '_incid.txt',
@@ -191,6 +193,43 @@ def imread_convert(image):
     """
 
     return imread(image, as_grey=True)
+
+
+def mean_efficiency():
+    """
+    """
+
+    manual_45 = pd.read_excel('manual_count/manual_Kr-78_4,5min.xls')
+    manual_85 = pd.read_excel('manual_count/manual_Kr-78_8,5min.xls')
+    manual_dat2 = pd.read_excel('manual_count/manual_dataset02.xls')
+
+    auto_45 = pd.read_csv('auto_count/autoincid_Kr-78_4,5min.txt')
+    auto_85 = pd.read_csv('auto_count/autoincid_Kr-78_8,5min.txt')
+    auto_dat2 = pd.read_csv('auto_count/auto_dataset02.txt')
+
+    auto = np.asarray(list(auto_45[(auto_45['initial_radius'] == 5) &
+                                   (auto_45['delta_radius'] == 4)].auto_withborder) +
+                      list(auto_45[(auto_45['initial_radius'] == 25) &
+                                   (auto_45['delta_radius'] == 2)].auto_noborder) +
+                      list(auto_85[(auto_85['initial_radius'] == 5) &
+                                   (auto_85['delta_radius'] == 4)].auto_withborder) +
+                      list(auto_85[(auto_85['initial_radius'] == 25) &
+                                   (auto_85['delta_radius'] == 2)].auto_noborder) +
+                      list(auto_dat2[(auto_dat2['initial_radius'] == 10) &
+                                     (auto_dat2['delta_radius'] == 8)].auto_withborder) +
+                      list(auto_dat2[(auto_dat2['initial_radius'] == 10) &
+                                     (auto_dat2['delta_radius'] == 8)].auto_noborder))
+
+    manual = np.asarray(list(manual_45.manual_withborder) + list(manual_45.manual_noborder) +
+                    list(manual_85.manual_withborder) + list(manual_85.manual_noborder) +
+                    list(manual_dat2.manual_withborder) + list(manual_dat2.manual_noborder))
+
+    smp_mean = np.mean(auto / manual)
+    smp_stdmean = np.std(auto / manual) / np.sqrt(len(auto))
+
+    print('mu = ', smp_mean, ', sigma = ', smp_stdmean)
+
+    return None
 
 
 def plot_auxiliar_dataset1(var_manual, var_auto, auto_color='b',
