@@ -11,9 +11,9 @@
 ```
 Copyright (C) 2017 Alexandre Fioravante de Siqueira
 
-This file is part of the supplementary material to 'An automatic
-method for segmentation of fission tracks in epidote crystal
-photomicrographs, based on starlet wavelets'.
+This file is part of the supplementary material to 'Segmentation of
+nearly isotropic overlapped tracks in photomicrographs using successive
+erosions as watershed markers'.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
