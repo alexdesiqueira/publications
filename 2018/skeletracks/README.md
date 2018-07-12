@@ -6,7 +6,7 @@
 
 <sup>2</sup> _Institut für Geologie, TU Bergakademie Freiberg_
 
-* This paper is available on: [[arXiv]]()
+* This paper is available on: [[arXiv]](https://arxiv.org/abs/1806.05199)
 
 ```
 Copyright (C) 2018 Alexandre Fioravante de Siqueira
