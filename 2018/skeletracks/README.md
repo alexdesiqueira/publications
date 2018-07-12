@@ -11,9 +11,8 @@
 ```
 Copyright (C) 2018 Alexandre Fioravante de Siqueira
 
-This file is part of the supplementary material to 'Segmentation of
-nearly isotropic overlapped tracks in photomicrographs using successive
-erosions as watershed markers'.
+This file is part of the supplementary material to 'Automatic counting
+of fission tracks in apatite and muscovite using image processing'.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
