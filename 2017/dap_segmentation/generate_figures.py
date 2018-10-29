@@ -25,16 +25,6 @@ photomicrographs using successive erosions as watershed markers -
 Supplementary Material'. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import numpy as np
-import os
-import pandas as pd
-import warnings
-
-# Importing the scripts generated in de Siqueira (2017).
-import desiqueira2017 as ds
-
 from itertools import chain, product
 from matplotlib import mlab
 from matplotlib.animation import ArtistAnimation
@@ -46,6 +36,15 @@ from skimage.io import imread
 from skimage.measure import label
 from skimage.morphology import binary_erosion, disk, watershed
 from skimage.segmentation import clear_border
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+import os
+import pandas as pd
+import warnings
+
+import desiqueira2017 as ds  # functions presented in this study
 
 
 # Setting up the figures appearance.
@@ -177,8 +176,7 @@ def figure_4():
                     'K90_incid4,5min_1.bmp'), as_grey=True)
 
     imgbin_wb = binary_fill_holes(image < threshold_isodata(image))
-    imgbin_nb = clear_border(binary_fill_holes(image <
-                             threshold_isodata(image)))
+    imgbin_nb = clear_border(binary_fill_holes(image < threshold_isodata(image)))
 
     # Figure 4 (a).
     plt.figure(figsize=(10, 12))
@@ -219,8 +217,7 @@ def figure_5():
     plt.savefig('Fig_5a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 5 (b).
-    imgbin_nb = clear_border(binary_fill_holes(image <
-                             threshold_isodata(image)))
+    imgbin_nb = clear_border(binary_fill_holes(image < threshold_isodata(image)))
     imglabel_nb, _, _ = ds.segmentation_wusem(imgbin_nb,
                                               initial_radius=5,
                                               delta_radius=4)
@@ -870,9 +867,9 @@ def figure_12():
     plt.savefig('Fig_12a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 12 (b).
-    imgbin_nb = clear_border(binary_fill_holes(image <
-                             threshold_isodata(image)))
-    imglabel_nb, _, _ = ds.segmentation_wusem(imgbin_nb, initial_radius=5,
+    imgbin_nb = clear_border(binary_fill_holes(image < threshold_isodata(image)))
+    imglabel_nb, _, _ = ds.segmentation_wusem(imgbin_nb,
+                                              initial_radius=5,
                                               delta_radius=2)
     imgnumber_nb = ds.enumerate_objects(image, imglabel_nb, font_size=25)
 
@@ -1264,8 +1261,7 @@ def figure_sup3():
                    as_grey=True)
 
     imgbin_wb = binary_fill_holes(image < threshold_isodata(image))
-    imgbin_nb = clear_border(binary_fill_holes(image <
-                             threshold_isodata(image)))
+    imgbin_nb = clear_border(binary_fill_holes(image < threshold_isodata(image)))
 
     # Supplementary Figure 3 (a).
     plt.figure(figsize=(10, 12))

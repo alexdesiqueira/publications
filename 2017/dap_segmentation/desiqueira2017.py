@@ -25,11 +25,6 @@ photomicrographs using successive erosions as watershed markers -
 Supplementary Material'.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import matplotlib.mlab as mlab
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-
 from itertools import product
 from PIL import Image, ImageDraw, ImageFont
 from scipy.ndimage.morphology import (binary_fill_holes,
@@ -45,6 +40,10 @@ from skimage.segmentation import clear_border
 from skimage.util import img_as_ubyte
 from sys import platform
 
+import matplotlib.mlab as mlab
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 # Defining the file extension to save all generated images.
 FILE_EXT = '.jpg'
