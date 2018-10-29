@@ -32,7 +32,7 @@ from scipy.ndimage.morphology import (binary_fill_holes,
 from scipy.stats import norm
 from skimage import morphology
 from skimage.color import gray2rgb
-from skimage.io import ImageCollection, imread, imread_collection
+from skimage.io import imread, imread_collection
 from skimage.filters import threshold_isodata
 from skimage.measure import regionprops, label
 from skimage.segmentation import clear_border

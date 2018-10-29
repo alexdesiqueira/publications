@@ -9,7 +9,7 @@
 * This paper is available on: [[arXiv]](https://arxiv.org/abs/1706.03282)
 
 ```
-Copyright (C) 2014 Alexandre Fioravante de Siqueira
+Copyright (C) 2017 Alexandre Fioravante de Siqueira
 
 This file is part of the supplementary material to 'An automatic
 method for segmentation of fission tracks in epidote crystal
