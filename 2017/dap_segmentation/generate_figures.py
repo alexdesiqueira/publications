@@ -25,6 +25,16 @@ photomicrographs using successive erosions as watershed markers -
 Supplementary Material'. If not, see <http://www.gnu.org/licenses/>.
 """
 
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+import os
+import pandas as pd
+import warnings
+
+# Importing the scripts generated in de Siqueira (2017).
+import desiqueira2017 as ds
+
 from itertools import chain, product
 from matplotlib import mlab
 from matplotlib.animation import ArtistAnimation
@@ -37,14 +47,6 @@ from skimage.measure import label
 from skimage.morphology import binary_erosion, disk, watershed
 from skimage.segmentation import clear_border
 
-import desiqueira2017 as ds
-
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import numpy as np
-import os
-import pandas as pd
-import warnings
 
 # Setting up the figures appearance.
 plt.rcParams['font.family'] = 'monospace'
@@ -59,6 +61,9 @@ default_fontsize = 15
 
 # Ignoring warnings.
 warnings.filterwarnings('ignore')
+
+# Defining the file extension to save all generated images.
+FILE_EXT = '.jpg'
 
 
 def figure_1():
@@ -159,63 +164,6 @@ def figure_1():
     return None
 
 
-def figure_new():
-    """
-    """
-
-    initial_radius = 25
-    delta_radius = 2
-    counter = 1
-
-    image = imread(('orig_figures/dataset_01/Kr-78_4,5min/K90_incid/'
-                    'K90_incid4,5min_1.bmp'), as_grey=True)
-    thresh = threshold_isodata(image)
-    img_bin = binary_fill_holes(image < thresh)
-
-    rows, cols = image.shape
-    img_labels = np.zeros((rows, cols))
-    curr_radius = initial_radius
-    distance = distance_transform_edt(img_bin)
-
-    while True:
-
-        str_el = disk(curr_radius)
-        erod_aux = binary_erosion(img_bin, selem=str_el)
-
-        if erod_aux.min() == erod_aux.max():
-            break
-
-        markers = label(erod_aux)
-        curr_labels = watershed(-distance, markers, mask=img_bin)
-
-        # preparing for another loop.
-        img_labels += curr_labels
-        curr_radius += delta_radius
-
-        # generating all figures at once.
-        erod_diff = np.zeros((rows, cols, 3))
-        erod_diff[:, :, 0][img_bin] = 1
-        erod_diff[:, :][erod_aux] = [1, 1, 1]
-
-        plt.figure(figsize=(10, 12))
-        plt.imshow(erod_diff)
-        plt.savefig('Fig_new' + str(counter) + '.eps', bbox_inches='tight')
-
-        plt.figure(figsize=(10, 12))
-        plt.imshow(markers, cmap='nipy_spectral')
-        plt.savefig('Fig_new' + str(counter + 1) + '.eps', bbox_inches='tight')
-
-        plt.figure(figsize=(10, 12))
-        plt.imshow(curr_labels, cmap='nipy_spectral')
-        plt.savefig('Fig_new' + str(counter + 2) + '.eps', bbox_inches='tight')
-
-        counter += 3
-    # reordering labels.
-    img_labels = label(img_labels)
-
-    return None
-
-
 def figure_4():
     """
     Figure 4: Input photomicrograph binarized using the ISODATA threshold
@@ -235,12 +183,12 @@ def figure_4():
     # Figure 4 (a).
     plt.figure(figsize=(10, 12))
     plt.imshow(imgbin_wb, cmap='gray')
-    plt.savefig('Fig_4a.eps', bbox_inches='tight')
+    plt.savefig('Fig_4a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 4 (b).
     plt.figure(figsize=(10, 12))
     plt.imshow(imgbin_nb, cmap='gray')
-    plt.savefig('Fig_4b.eps', bbox_inches='tight')
+    plt.savefig('Fig_4b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -268,7 +216,7 @@ def figure_5():
 
     plt.figure(figsize=(10, 12))
     plt.imshow(imgnumber_wb, cmap='gray')
-    plt.savefig('Fig_5a.eps', bbox_inches='tight')
+    plt.savefig('Fig_5a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 5 (b).
     imgbin_nb = clear_border(binary_fill_holes(image <
@@ -280,7 +228,7 @@ def figure_5():
 
     plt.figure(figsize=(10, 12))
     plt.imshow(imgnumber_nb, cmap='gray')
-    plt.savefig('Fig_5b.eps', bbox_inches='tight')
+    plt.savefig('Fig_5b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -356,7 +304,7 @@ def figure_6():
     ax.set_xlim([5, 100])
     ax.set_ylim([-1, 40])
 
-    plt.savefig('Fig_6a.eps', bbox_inches='tight')
+    plt.savefig('Fig_6a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 6 (b).
     fig, ax = plt.subplots(figsize=(15, 10))
@@ -388,7 +336,7 @@ def figure_6():
     ax.set_xlim([5, 100])
     ax.set_ylim([-1, 40])
 
-    plt.savefig('Fig_6b.eps', bbox_inches='tight')
+    plt.savefig('Fig_6b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -517,7 +465,7 @@ def figure_7():
     ax.set_xlabel('Sample number')
     ax.set_ylabel('Tracks counted')
 
-    plt.savefig('Fig_7a.eps', bbox_inches='tight')
+    plt.savefig('Fig_7a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 7 (b).
     fig, ax = plt.subplots(figsize=(16, 10))
@@ -569,7 +517,7 @@ def figure_7():
                        sample[6], sample[7], sample[8]],
               loc='lower right', ncol=1, frameon=False)
 
-    plt.savefig('Fig_7b.eps', bbox_inches='tight')
+    plt.savefig('Fig_7b' + FILE_EXT, bbox_inches='tight')
 
     # Figure 7 (c).
     fig, ax = plt.subplots(figsize=(16, 10))
@@ -609,7 +557,7 @@ def figure_7():
     ax.set_xlabel('Sample number')
     ax.set_ylabel('Tracks counted')
 
-    plt.savefig('Fig_7c.eps', bbox_inches='tight')
+    plt.savefig('Fig_7c' + FILE_EXT, bbox_inches='tight')
 
     # Figure 7 (d).
     fig, ax = plt.subplots(figsize=(16, 10))
@@ -661,7 +609,7 @@ def figure_7():
                        sample[6], sample[7], sample[8]],
               loc='lower right', ncol=1, frameon=False)
 
-    plt.savefig('Fig_7d.eps', bbox_inches='tight')
+    plt.savefig('Fig_7d' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -689,7 +637,7 @@ def figure_8():
     ax.set_xlabel('Minor diameter ($D_{<}$, $\mu m^{2}$)')
     ax.set_ylabel('Normalized frequency')
 
-    plt.savefig('Fig_8a.eps', bbox_inches='tight')
+    plt.savefig('Fig_8a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 8 (b).
     info_clean = pd.read_csv('auto_count/roundclean_Kr-78_4,5min_T.txt')
@@ -703,7 +651,7 @@ def figure_8():
     ax.set_xlabel('Minor diameter ($D_{<}$, $\mu m^{2}$)')
     ax.set_ylabel('Normalized frequency')
 
-    plt.savefig('Fig_8b.eps', bbox_inches='tight')
+    plt.savefig('Fig_8b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -726,12 +674,12 @@ def figure_9():
     # Figure 9 (a).
     plt.figure(figsize=(15, 10))
     plt.imshow(labels, cmap='nipy_spectral')
-    plt.savefig('Fig_9a.eps', bbox_inches='tight')
+    plt.savefig('Fig_9a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 9 (b).
     plt.figure(figsize=(15, 10))
     plt.imshow(objects, cmap='magma')
-    plt.savefig('Fig_9b.eps', bbox_inches='tight')
+    plt.savefig('Fig_9b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -803,7 +751,7 @@ def figure_10():
                  linewidth=3, linestyle='--', color='#7570b3')
     ax_dedx.set_ylabel('Electronic dE/dx (keV/$\mu m$)')
 
-    plt.savefig('Fig_10a.eps', bbox_inches='tight')
+    plt.savefig('Fig_10a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 10 (b).
     fig, ax = plt.subplots(figsize=(15, 10))
@@ -829,7 +777,7 @@ def figure_10():
                  linewidth=3, linestyle='--', color='#7570b3')
     ax_dedx.set_ylabel('Electronic dE/dx (keV/$\mu m$)')
 
-    plt.savefig('Fig_10b.eps', bbox_inches='tight')
+    plt.savefig('Fig_10b' + FILE_EXT, bbox_inches='tight')
 
     data_wb85, data_nb85 = [{} for _ in range(2)]
     for idx, folder in enumerate(folders):
@@ -866,7 +814,7 @@ def figure_10():
                  linewidth=3, linestyle='--', color='#7570b3')
     ax_dedx.set_ylabel('Electronic dE/dx (keV/$\mu m$)')
 
-    plt.savefig('Fig_10c.eps', bbox_inches='tight')
+    plt.savefig('Fig_10c' + FILE_EXT, bbox_inches='tight')
 
     # Figure 10 (d).
     fig, ax = plt.subplots(figsize=(15, 10))
@@ -892,7 +840,7 @@ def figure_10():
                  linewidth=3, linestyle='--', color='#7570b3')
     ax_dedx.set_ylabel('Electronic dE/dx (keV/$\mu m$)')
 
-    plt.savefig('Fig_10d.eps', bbox_inches='tight')
+    plt.savefig('Fig_10d' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -919,7 +867,7 @@ def figure_12():
 
     plt.figure(figsize=(10, 12))
     plt.imshow(imgnumber_wb, cmap='gray')
-    plt.savefig('Fig_12a.eps', bbox_inches='tight')
+    plt.savefig('Fig_12a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 12 (b).
     imgbin_nb = clear_border(binary_fill_holes(image <
@@ -930,7 +878,7 @@ def figure_12():
 
     plt.figure(figsize=(10, 12))
     plt.imshow(imgnumber_nb, cmap='gray')
-    plt.savefig('Fig_12b.eps', bbox_inches='tight')
+    plt.savefig('Fig_12b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -1054,7 +1002,7 @@ def figure_13():
     ax.set_xlabel('Sample number')
     ax.set_ylabel('Tracks counted')
 
-    plt.savefig('Fig_13a.eps', bbox_inches='tight')
+    plt.savefig('Fig_13a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 13 (b).
     fig, ax = plt.subplots(figsize=(16, 10))
@@ -1106,7 +1054,7 @@ def figure_13():
     ax.legend(handles=[sample[0], sample[1]],
               loc='lower right', ncol=1, frameon=False)
 
-    plt.savefig('Fig_13b.eps', bbox_inches='tight')
+    plt.savefig('Fig_13b' + FILE_EXT, bbox_inches='tight')
 
     # Figure 13 (c).
     fig, ax = plt.subplots(figsize=(16, 10))
@@ -1146,7 +1094,7 @@ def figure_13():
     ax.set_xlabel('Sample number')
     ax.set_ylabel('Tracks counted')
 
-    plt.savefig('Fig_13c.eps', bbox_inches='tight')
+    plt.savefig('Fig_13c' + FILE_EXT, bbox_inches='tight')
 
     # Figure 13 (d).
     fig, ax = plt.subplots(figsize=(16, 10))
@@ -1200,7 +1148,7 @@ def figure_13():
               ncol=1,
               frameon=False)
 
-    plt.savefig('Fig_13d.eps', bbox_inches='tight')
+    plt.savefig('Fig_13d' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -1251,7 +1199,7 @@ def figure_sup1():
                         '18', '20'))
 
     fig.colorbar(image, ax=ax, orientation='vertical')
-    plt.savefig('Fig_sup1a.eps', bbox_inches='tight')
+    plt.savefig('Fig_sup1a' + FILE_EXT, bbox_inches='tight')
 
     # Supplementary Figure 1 (b).
     fig, ax = plt.subplots(figsize=(12, 12))
@@ -1266,7 +1214,7 @@ def figure_sup1():
                         '18', '20'))
 
     fig.colorbar(image, ax=ax, orientation='vertical')
-    plt.savefig('Fig_sup1b.eps', bbox_inches='tight')
+    plt.savefig('Fig_sup1b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -1280,22 +1228,23 @@ def figure_sup2():
 
     ds.separate_tracks_set1(save_tracks=True)
 
-    input_files = ['K90_incid4,5min_1_track_2.eps',
-                   'K90_incid4,5min_1_track_4.eps',
-                   'K90_incid4,5min_1_track_5.eps',
-                   'K90_incid4,5min_1_track_11.eps',
-                   'K90_incid4,5min_1_track_14.eps',
-                   'K90_incid4,5min_1_track_15.eps',
-                   'K90_incid4,5min_1_track_21.eps',
-                   'K90_incid4,5min_1_track_22.eps',
-                   'K90_incid4,5min_1_track_23.eps',
-                   'K90_incid4,5min_1_track_24.eps']
+    input_files = ['K90_incid4,5min_1_track_2' + FILE_EXT,
+                   'K90_incid4,5min_1_track_4' + FILE_EXT,
+                   'K90_incid4,5min_1_track_5' + FILE_EXT,
+                   'K90_incid4,5min_1_track_11' + FILE_EXT,
+                   'K90_incid4,5min_1_track_14' + FILE_EXT,
+                   'K90_incid4,5min_1_track_15' + FILE_EXT,
+                   'K90_incid4,5min_1_track_21' + FILE_EXT,
+                   'K90_incid4,5min_1_track_22' + FILE_EXT,
+                   'K90_incid4,5min_1_track_23' + FILE_EXT,
+                   'K90_incid4,5min_1_track_24' + FILE_EXT]
 
     # Supplementary Figure 2, from (a) to (j).
-    output_files = ['Fig_sup2a.eps', 'Fig_sup2b.eps', 'Fig_sup2c.eps',
-                    'Fig_sup2d.eps', 'Fig_sup2e.eps', 'Fig_sup2f.eps',
-                    'Fig_sup2g.eps', 'Fig_sup2h.eps', 'Fig_sup2i.eps',
-                    'Fig_sup2j.eps']
+    output_files = ['Fig_sup2a' + FILE_EXT, 'Fig_sup2b' + FILE_EXT,
+                    'Fig_sup2c' + FILE_EXT, 'Fig_sup2d' + FILE_EXT,
+                    'Fig_sup2e' + FILE_EXT, 'Fig_sup2f' + FILE_EXT,
+                    'Fig_sup2g' + FILE_EXT, 'Fig_sup2h' + FILE_EXT,
+                    'Fig_sup2i' + FILE_EXT, 'Fig_sup2j' + FILE_EXT]
 
     for idx, name in enumerate(input_files):
         os.rename(src=name, dst=output_files[idx])
@@ -1321,12 +1270,12 @@ def figure_sup3():
     # Supplementary Figure 3 (a).
     plt.figure(figsize=(10, 12))
     plt.imshow(imgbin_wb, cmap='gray')
-    plt.savefig('Fig_sup3a.eps', bbox_inches='tight')
+    plt.savefig('Fig_sup3a' + FILE_EXT, bbox_inches='tight')
 
     # Supplementary  Figure 3 (b).
     plt.figure(figsize=(10, 12))
     plt.imshow(imgbin_nb, cmap='gray')
-    plt.savefig('Fig_sup3b.eps', bbox_inches='tight')
+    plt.savefig('Fig_sup3b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -1375,7 +1324,7 @@ def figure_sup4():
                         '20'))
 
     fig.colorbar(image, ax=ax, orientation='vertical')
-    plt.savefig('Fig_sup4a.eps', bbox_inches='tight')
+    plt.savefig('Fig_sup4a' + FILE_EXT, bbox_inches='tight')
 
     # Supplementary Figure 4 (b).
     fig, ax = plt.subplots(figsize=(12, 12))
@@ -1390,7 +1339,7 @@ def figure_sup4():
                         '20'))
 
     fig.colorbar(image, ax=ax, orientation='vertical')
-    plt.savefig('Fig_sup4b.eps', bbox_inches='tight')
+    plt.savefig('Fig_sup4b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -1459,7 +1408,7 @@ def figure_sup5():
     ax.set_xlim([5, 25])
     ax.set_ylim([-1, 100])
 
-    plt.savefig('Fig_sup5a.eps', bbox_inches='tight')
+    plt.savefig('Fig_sup5a' + FILE_EXT, bbox_inches='tight')
 
     # Supplementary Figure 5 (b).
     fig, ax = plt.subplots(figsize=(15, 10))
@@ -1490,7 +1439,67 @@ def figure_sup5():
     ax.set_xlim([5, 25])
     ax.set_ylim([-1, 100])
 
-    plt.savefig('Fig_sup5b.eps', bbox_inches='tight')
+    plt.savefig('Fig_sup5b' + FILE_EXT, bbox_inches='tight')
+
+    return None
+
+
+def figure_new():
+    """New figure. Not ready for production :)
+    """
+
+    initial_radius = 25
+    delta_radius = 2
+    counter = 1
+
+    image = imread(('orig_figures/dataset_01/Kr-78_4,5min/K90_incid/'
+                    'K90_incid4,5min_1.bmp'), as_grey=True)
+    thresh = threshold_isodata(image)
+    img_bin = binary_fill_holes(image < thresh)
+
+    rows, cols = image.shape
+    img_labels = np.zeros((rows, cols))
+    curr_radius = initial_radius
+    distance = distance_transform_edt(img_bin)
+
+    while True:
+
+        str_el = disk(curr_radius)
+        erod_aux = binary_erosion(img_bin, selem=str_el)
+
+        if erod_aux.min() == erod_aux.max():
+            break
+
+        markers = label(erod_aux)
+        curr_labels = watershed(-distance, markers, mask=img_bin)
+
+        # preparing for another loop.
+        img_labels += curr_labels
+        curr_radius += delta_radius
+
+        # generating all figures at once.
+        erod_diff = np.zeros((rows, cols, 3))
+        erod_diff[:, :, 0][img_bin] = 1
+        erod_diff[:, :][erod_aux] = [1, 1, 1]
+
+        plt.figure(figsize=(10, 12))
+        plt.imshow(erod_diff)
+        plt.savefig('Fig_new' + str(counter) + FILE_EXT,
+                    bbox_inches='tight')
+
+        plt.figure(figsize=(10, 12))
+        plt.imshow(markers, cmap='nipy_spectral')
+        plt.savefig('Fig_new' + str(counter + 1) + FILE_EXT,
+                    bbox_inches='tight')
+
+        plt.figure(figsize=(10, 12))
+        plt.imshow(curr_labels, cmap='nipy_spectral')
+        plt.savefig('Fig_new' + str(counter + 2) + FILE_EXT,
+                    bbox_inches='tight')
+
+        counter += 3
+    # reordering labels.
+    img_labels = label(img_labels)
 
     return None
 
