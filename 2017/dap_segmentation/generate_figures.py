@@ -27,6 +27,7 @@ Supplementary Material'. If not, see <http://www.gnu.org/licenses/>.
 
 from itertools import chain, product
 from matplotlib import mlab
+from matplotlib.animation import ArtistAnimation
 from scipy.ndimage.morphology import (binary_fill_holes,
                                       distance_transform_edt)
 from scipy.stats import norm
@@ -37,7 +38,7 @@ from skimage.morphology import binary_erosion, disk, watershed
 from skimage.segmentation import clear_border
 
 import desiqueira2017 as ds
-from matplotlib.animation import ArtistAnimation
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
@@ -158,6 +159,63 @@ def figure_1():
     return None
 
 
+def figure_new():
+    """
+    """
+
+    initial_radius = 25
+    delta_radius = 2
+    counter = 1
+
+    image = imread(('orig_figures/dataset_01/Kr-78_4,5min/K90_incid/'
+                    'K90_incid4,5min_1.bmp'), as_grey=True)
+    thresh = threshold_isodata(image)
+    img_bin = binary_fill_holes(image < thresh)
+
+    rows, cols = image.shape
+    img_labels = np.zeros((rows, cols))
+    curr_radius = initial_radius
+    distance = distance_transform_edt(img_bin)
+
+    while True:
+
+        str_el = disk(curr_radius)
+        erod_aux = binary_erosion(img_bin, selem=str_el)
+
+        if erod_aux.min() == erod_aux.max():
+            break
+
+        markers = label(erod_aux)
+        curr_labels = watershed(-distance, markers, mask=img_bin)
+
+        # preparing for another loop.
+        img_labels += curr_labels
+        curr_radius += delta_radius
+
+        # generating all figures at once.
+        erod_diff = np.zeros((rows, cols, 3))
+        erod_diff[:, :, 0][img_bin] = 1
+        erod_diff[:, :][erod_aux] = [1, 1, 1]
+
+        plt.figure(figsize=(10, 12))
+        plt.imshow(erod_diff)
+        plt.savefig('Fig_new' + str(counter) + '.eps', bbox_inches='tight')
+
+        plt.figure(figsize=(10, 12))
+        plt.imshow(markers, cmap='nipy_spectral')
+        plt.savefig('Fig_new' + str(counter + 1) + '.eps', bbox_inches='tight')
+
+        plt.figure(figsize=(10, 12))
+        plt.imshow(curr_labels, cmap='nipy_spectral')
+        plt.savefig('Fig_new' + str(counter + 2) + '.eps', bbox_inches='tight')
+
+        counter += 3
+    # reordering labels.
+    img_labels = label(img_labels)
+
+    return None
+
+
 def figure_4():
     """
     Figure 4: Input photomicrograph binarized using the ISODATA threshold
@@ -195,7 +253,7 @@ def figure_5():
     regions where tracks overlap are counted as tracks, e.g.: (a) 7, 8, 9,
     and 11 (only two tracks). (a) Considering border tracks. (b) Ignoring
     border tracks. Parameters for WUSEM algorithm: initial_radius = 5,
-    delta_radius = 2.
+    delta_radius = 4.
     """
 
     image = imread(('orig_figures/dataset_01/Kr-78_4,5min/K90_incid/'
@@ -203,8 +261,9 @@ def figure_5():
 
     # Figure 5 (a).
     imgbin_wb = binary_fill_holes(image < threshold_isodata(image))
-    imglabel_wb, _, _ = ds.segmentation_wusem(imgbin_wb, initial_radius=5,
-                                              delta_radius=2)
+    imglabel_wb, _, _ = ds.segmentation_wusem(imgbin_wb,
+                                              initial_radius=5,
+                                              delta_radius=4)
     imgnumber_wb = ds.enumerate_objects(image, imglabel_wb, font_size=25)
 
     plt.figure(figsize=(10, 12))
@@ -214,8 +273,9 @@ def figure_5():
     # Figure 5 (b).
     imgbin_nb = clear_border(binary_fill_holes(image <
                              threshold_isodata(image)))
-    imglabel_nb, _, _ = ds.segmentation_wusem(imgbin_nb, initial_radius=5,
-                                              delta_radius=2)
+    imglabel_nb, _, _ = ds.segmentation_wusem(imgbin_nb,
+                                              initial_radius=5,
+                                              delta_radius=4)
     imgnumber_nb = ds.enumerate_objects(image, imglabel_nb, font_size=25)
 
     plt.figure(figsize=(10, 12))
@@ -367,11 +427,13 @@ def figure_7():
                'K90_incid']
 
     man_count = pd.read_excel('manual_count/manual_Kr-78_4,5min.xls')
+    comp_count = pd.read_excel('comp_count/imagej_Kr-78_4,5min.xls')
     auto_count = pd.read_csv('auto_count/autoincid_Kr-78_4,5min.txt')
-    manual, auto, autobest_wb, autobest_nb = [{} for _ in range(4)]
+    manual, comp, auto, autobest_wb, autobest_nb = [{} for _ in range(5)]
 
     for idx, folder in enumerate(folders):
         manual[samples[idx]] = man_count[man_count['folder'] == folder]
+        comp[samples[idx]] = comp_count[comp_count['folder'] == folder]
         auto[samples[idx]] = auto_count[auto_count['folder'] == folder]
 
     for key, val in auto.items():
@@ -383,35 +445,42 @@ def figure_7():
                                (val['delta_radius'] == 2)]
 
     manvsauto_wb, manvsauto_nb = [[] for _ in range(2)]
-    pos = list(range(1, 19))
+    pos = list(range(1, 28))  # manual, comp and auto: 8 spaces each
 
+    manual_color = '1'
+    comp_color = '0.5'
     plot_colors = {'0': '#440154', '20': '#482878', '30': '#3e4989',
                    '40': '#31688e', '50': '#26828e', '60': '#35b779',
                    '70': '#6ece58', '80': '#b5de2b', '90': '#fde725'}
-    color_fit = '#e41a1c'
+    compfit_color = 'k'
+    autofit_color = '#cb181d'
     box_colors = []
 
     for _, val in plot_colors.items():
-        box_colors.append('0.80')
+        box_colors.append(manual_color)
+        box_colors.append(comp_color)
         box_colors.append(val)
 
     flier_props = dict(marker='P', markerfacecolor='#386cb0',
                        markeredgecolor='#386cb0', linestyle='none')
 
-    x_ticks = [1.5, 3.5, 5.5, 7.5, 9.5, 11.5, 13.5, 15.5, 17.5]
+    x_ticks = np.arange(2, 27, 3)
     x_labels = ['K0', 'K20', 'K30', 'K40', 'K50', 'K60', 'K70',
                 'K80', 'K90']
 
     for key, val in manual.items():
-        # data for "with borders" scenario.
+        # data for "with borders" scenario: manual, comparison, auto
         manvsauto_wb.append([np.asarray(val.manual_withborder)])
+        manvsauto_wb.append([np.asarray(comp[key].imagej_withborder)])
         manvsauto_wb.append([np.asarray(autobest_wb[key].auto_withborder)])
-        # data for "no borders" scenario.
+
+        # data for "no borders" scenario: manual, comparison, auto
         manvsauto_nb.append([np.asarray(val.manual_noborder)])
+        manvsauto_nb.append([np.asarray(comp[key].imagej_noborder)])
         manvsauto_nb.append([np.asarray(autobest_nb[key].auto_noborder)])
 
     # Figure 7 (a).
-    fig, ax = plt.subplots(figsize=(12, 12))
+    fig, ax = plt.subplots(figsize=(16, 10))
     box_plot = ax.boxplot(manvsauto_wb, flierprops=flier_props,
                           positions=pos)
 
@@ -451,11 +520,11 @@ def figure_7():
     plt.savefig('Fig_7a.eps', bbox_inches='tight')
 
     # Figure 7 (b).
-    fig, ax = plt.subplots(figsize=(12, 12))
+    fig, ax = plt.subplots(figsize=(16, 10))
 
     # preparing fit variables.
     x = np.linspace(0, 50, 1000)
-    aux_manual, aux_auto = [[] for _ in range(2)]
+    aux_manual, aux_comp, aux_auto = [[] for _ in range(3)]
 
     for key, val in manual.items():
         ax.plot(val.manual_withborder,
@@ -466,16 +535,22 @@ def figure_7():
                 markersize=18)
 
         aux_manual.append(val.manual_withborder.tolist())
+        aux_comp.append(comp[key].imagej_withborder.tolist())
         aux_auto.append(autobest_wb[key].auto_withborder.tolist())
 
     aux_manual = list(chain.from_iterable(aux_manual))
+    aux_comp = list(chain.from_iterable(aux_comp))
     aux_auto = list(chain.from_iterable(aux_auto))
 
     # fitting a line in the data.
     fit = np.polyfit(aux_manual, aux_auto, deg=1)
     fit_fn = np.poly1d(fit)
-    ax.plot(aux_manual, fit_fn(aux_manual), linewidth=3, color=color_fit)
+    ax.plot(aux_manual, fit_fn(aux_manual), linewidth=3, color=autofit_color)
     ax.plot(x, x, '--', color='k')
+
+    fit_comp = np.polyfit(aux_manual, aux_comp, deg=1)
+    fit_fn2 = np.poly1d(fit_comp)
+    ax.plot(aux_manual, fit_fn2(aux_manual), linewidth=3, color=compfit_color)
 
     # setting axes and labels.
     ax.axis([0, 50, 0, 50])
@@ -497,7 +572,7 @@ def figure_7():
     plt.savefig('Fig_7b.eps', bbox_inches='tight')
 
     # Figure 7 (c).
-    fig, ax = plt.subplots(figsize=(12, 12))
+    fig, ax = plt.subplots(figsize=(16, 10))
     box_plot = ax.boxplot(manvsauto_nb, flierprops=flier_props,
                           positions=pos)
 
@@ -537,11 +612,11 @@ def figure_7():
     plt.savefig('Fig_7c.eps', bbox_inches='tight')
 
     # Figure 7 (d).
-    fig, ax = plt.subplots(figsize=(12, 12))
+    fig, ax = plt.subplots(figsize=(16, 10))
 
     # preparing fit variables.
     x = np.linspace(0, 50, 1000)
-    aux_manual, aux_auto = [[] for _ in range(2)]
+    aux_manual, aux_comp, aux_auto = [[] for _ in range(3)]
 
     for key, val in manual.items():
         ax.plot(val.manual_noborder,
@@ -552,16 +627,22 @@ def figure_7():
                 markersize=18)
 
         aux_manual.append(val.manual_noborder.tolist())
+        aux_comp.append(comp[key].imagej_noborder.tolist())
         aux_auto.append(autobest_nb[key].auto_noborder.tolist())
 
     aux_manual = list(chain.from_iterable(aux_manual))
+    aux_comp = list(chain.from_iterable(aux_comp))
     aux_auto = list(chain.from_iterable(aux_auto))
 
     # fitting a line in the data.
     fit = np.polyfit(aux_manual, aux_auto, deg=1)
     fit_fn = np.poly1d(fit)
-    ax.plot(aux_manual, fit_fn(aux_manual), linewidth=3, color=color_fit)
+    ax.plot(aux_manual, fit_fn(aux_manual), linewidth=3, color=autofit_color)
     ax.plot(x, x, '--', color='k')
+
+    fit_comp = np.polyfit(aux_manual, aux_comp, deg=1)
+    fit_fn2 = np.poly1d(fit_comp)
+    ax.plot(aux_manual, fit_fn2(aux_manual), linewidth=3, color=compfit_color)
 
     # setting axes and labels.
     ax.axis([0, 50, 0, 50])
@@ -882,50 +963,63 @@ def figure_13():
     """
 
     # defining some helping variables.
-    plot_colors = {'MAG1': '#472d7b', 'MAG2': '#addc30'}
-    color_fit = '#e41a1c'
+    manual_color = '1'
+    comp_color = '0.5'
+    plot_colors = {'MAG1': '#3e4989',
+                   'MAG2': '#6ece58'}
+    compfit_color = 'k'
+    autofit_color = '#cb181d'
+    box_colors = []
     auto_best = {}
 
     man_count = pd.read_excel('manual_count/manual_dataset02.xls')
+    comp_count = pd.read_excel('comp_count/imagej_dataset02.xls')
     auto_count = pd.read_csv('auto_count/auto_dataset02.txt')
 
-    manual, auto, meanman_wb, meanman_nb = [{} for _ in range(4)]
+    manual, comp, auto, meanman_wb, meanman_nb = [{} for _ in range(5)]
     manual = {'MAG1': man_count.query('image <= 8 or image == 19'),
               'MAG2': man_count.query('image > 8 and image < 18')}
+
+    comp = {'MAG1': comp_count.query('image <= 8 or image == 19'),
+            'MAG2': comp_count.query('image > 8 and image < 18')}
 
     auto = {'MAG1': auto_count.query('image <= 8 or image == 19'),
             'MAG2': auto_count.query('image > 8 and image < 18')}
 
     for key, val in auto.items():
-        # best candidate for considering and ignoring borders scenarios
-        # is the same.
+        # best candidate for both scenarios is the same.
         auto_best[key] = val[(val['initial_radius'] == 10) &
                              (val['delta_radius'] == 8)]
 
     manvsauto_wb, manvsauto_nb, box_colors = [[] for _ in range(3)]
-    pos = list(range(1, 5))
+    pos = list(range(1, 7))
 
     for _, val in plot_colors.items():
-        box_colors.append('0.80')
+        box_colors.append(manual_color)
+        box_colors.append(comp_color)
         box_colors.append(val)
 
     flier_props = dict(marker='P', markerfacecolor='#386cb0',
                        markeredgecolor='#386cb0', linestyle='none')
 
-    x_ticks = [1.5, 3.5]
+    x_ticks = [2, 5]
     x_labels = ['Magnification 1', 'Magnification 2']
 
     for key, val in manual.items():
-        # data for considering and ignoring borders scenarios.
+        # data for "with borders" scenario: manual, comparison, auto
         manvsauto_wb.append([np.asarray(val.manual_withborder)])
+        manvsauto_wb.append([np.asarray(comp[key].imagej_withborder)])
         manvsauto_wb.append([np.asarray(auto_best[key].auto_withborder)])
 
+        # data for "no borders" scenario: manual, comparison, auto
         manvsauto_nb.append([np.asarray(val.manual_noborder)])
+        manvsauto_nb.append([np.asarray(comp[key].imagej_noborder)])
         manvsauto_nb.append([np.asarray(auto_best[key].auto_noborder)])
 
     # Figure 13 (a).
-    fig, ax = plt.subplots(figsize=(12, 12))
-    box_plot = ax.boxplot(manvsauto_wb, flierprops=flier_props, positions=pos)
+    fig, ax = plt.subplots(figsize=(16, 10))
+    box_plot = ax.boxplot(manvsauto_wb, flierprops=flier_props,
+                          positions=pos)
 
     ax.set_xticks(x_ticks)
     ax.set_xticklabels(x_labels)
@@ -963,11 +1057,11 @@ def figure_13():
     plt.savefig('Fig_13a.eps', bbox_inches='tight')
 
     # Figure 13 (b).
-    fig, ax = plt.subplots(figsize=(12, 12))
+    fig, ax = plt.subplots(figsize=(16, 10))
 
     # preparing fit variables.
-    x = np.linspace(0, 100, 1000)
-    aux_manual, aux_auto = [[] for _ in range(2)]
+    x = np.linspace(0, 150, 1000)
+    aux_manual, aux_comp, aux_auto = [[] for _ in range(3)]
 
     for key, val in manual.items():
         ax.plot(val.manual_withborder,
@@ -978,19 +1072,27 @@ def figure_13():
                 markersize=18)
 
         aux_manual.append(val.manual_withborder.tolist())
+        aux_comp.append(comp[key].imagej_withborder.tolist())
         aux_auto.append(auto_best[key].auto_withborder.tolist())
 
     aux_manual = list(chain.from_iterable(aux_manual))
+    aux_comp = list(chain.from_iterable(aux_comp))
     aux_auto = list(chain.from_iterable(aux_auto))
 
     # fitting a line in the data.
     fit = np.polyfit(aux_manual, aux_auto, deg=1)
     fit_fn = np.poly1d(fit)
-    ax.plot(aux_manual, fit_fn(aux_manual), linewidth=3, color=color_fit)
+    ax.plot(aux_manual, fit_fn(aux_manual), linewidth=3,
+            color=autofit_color)
     ax.plot(x, x, '--', color='k')
 
+    fit_comp = np.polyfit(aux_manual, aux_comp, deg=1)
+    fit_fn2 = np.poly1d(fit_comp)
+    ax.plot(aux_manual, fit_fn2(aux_manual), linewidth=3,
+            color=compfit_color)
+
     # setting axes and labels.
-    ax.axis([0, 100, 0, 100])
+    ax.axis([0, 120, 0, 130])
     ax.set_xlabel('Manual counting')
     ax.set_ylabel('Automatic counting')
 
@@ -1007,8 +1109,9 @@ def figure_13():
     plt.savefig('Fig_13b.eps', bbox_inches='tight')
 
     # Figure 13 (c).
-    fig, ax = plt.subplots(figsize=(12, 12))
-    box_plot = ax.boxplot(manvsauto_nb, flierprops=flier_props, positions=pos)
+    fig, ax = plt.subplots(figsize=(16, 10))
+    box_plot = ax.boxplot(manvsauto_nb, flierprops=flier_props,
+                          positions=pos)
 
     ax.set_xticks(x_ticks)
     ax.set_xticklabels(x_labels)
@@ -1046,11 +1149,11 @@ def figure_13():
     plt.savefig('Fig_13c.eps', bbox_inches='tight')
 
     # Figure 13 (d).
-    fig, ax = plt.subplots(figsize=(12, 12))
+    fig, ax = plt.subplots(figsize=(16, 10))
 
     # preparing fit variables.
-    x = np.linspace(0, 100, 1000)
-    aux_manual, aux_auto = [[] for _ in range(2)]
+    x = np.linspace(0, 120, 1000)
+    aux_manual, aux_comp, aux_auto = [[] for _ in range(3)]
 
     for key, val in manual.items():
         ax.plot(val.manual_noborder,
@@ -1061,19 +1164,27 @@ def figure_13():
                 markersize=18)
 
         aux_manual.append(val.manual_noborder.tolist())
+        aux_comp.append(comp[key].imagej_noborder.tolist())
         aux_auto.append(auto_best[key].auto_noborder.tolist())
 
     aux_manual = list(chain.from_iterable(aux_manual))
+    aux_comp = list(chain.from_iterable(aux_comp))
     aux_auto = list(chain.from_iterable(aux_auto))
 
     # fitting a line in the data.
     fit = np.polyfit(aux_manual, aux_auto, deg=1)
     fit_fn = np.poly1d(fit)
-    ax.plot(aux_manual, fit_fn(aux_manual), linewidth=3, color=color_fit)
+    ax.plot(aux_manual, fit_fn(aux_manual), linewidth=3,
+            color=autofit_color)
     ax.plot(x, x, '--', color='k')
 
+    fit_comp = np.polyfit(aux_manual, aux_comp, deg=1)
+    fit_fn2 = np.poly1d(fit_comp)
+    ax.plot(aux_manual, fit_fn2(aux_manual), linewidth=3,
+            color=compfit_color)
+
     # setting axes and labels.
-    ax.axis([0, 100, 0, 100])
+    ax.axis([0, 120, 0, 130])
     ax.set_xlabel('Manual counting')
     ax.set_ylabel('Automatic counting')
 

@@ -35,6 +35,7 @@ from skimage.color import gray2rgb
 from skimage.io import imread, imread_collection
 from skimage.filters import threshold_isodata
 from skimage.measure import regionprops, label
+from skimage.morphology import remove_small_objects
 from skimage.segmentation import clear_border
 from skimage.util import img_as_ubyte
 from sys import platform
@@ -458,11 +459,15 @@ def segmentation_wusem(image, str_el='disk', initial_radius=10,
                                            mask=image)
         img_labels += curr_labels
 
-        # preparing to another loop.
+        # preparing for another loop.
         curr_radius += delta_radius
 
     # reordering labels.
-    img_labels, num_objects = label(img_labels, return_num=True)
+    img_labels = label(img_labels)
+
+    # removing small labels.
+    img_labels, num_objects = label(remove_small_objects(img_labels),
+                                    return_num=True)
 
     return img_labels, num_objects, last_step
 

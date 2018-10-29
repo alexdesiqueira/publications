@@ -1,6 +1,6 @@
 # Segmentation of nearly isotropic overlapped tracks in photomicrographs using successive erosions as watershed markers
 
-## Alexandre Fioravante de Siqueira<sup>1,2</sup>, Wagner Massayuki Nakasuga<sup>1</sup>, Sandro Guedes de Oliveira<sup>1</sup>, Raymond Jonckheere<sup>2</sup>, Lothar Ratschbacher<sup>2</sup>
+## Alexandre Fioravante de Siqueira<sup>1,2</sup>, Wagner Massayuki Nakasuga<sup>1</sup>, Sandro Guedes de Oliveira<sup>1</sup>, Lothar Ratschbacher<sup>2</sup>
 
 <sup>1</sup> _Departamento de Raios Cósmicos e Cronologia, IFGW, University of Campinas_
 
@@ -11,9 +11,9 @@
 ```
 Copyright (C) 2017 Alexandre Fioravante de Siqueira
 
-This file is part of the supplementary material to 'An automatic
-method for segmentation of fission tracks in epidote crystal
-photomicrographs, based on starlet wavelets'.
+This file is part of the supplementary material to 'Segmentation of
+nearly isotropic overlapped tracks in photomicrographs using successive
+erosions as watershed markers'.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
