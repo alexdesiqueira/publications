@@ -25,6 +25,11 @@ photomicrographs using successive erosions as watershed markers -
 Supplementary Material'.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import matplotlib.mlab as mlab
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 from itertools import product
 from PIL import Image, ImageDraw, ImageFont
 from scipy.ndimage.morphology import (binary_fill_holes,
@@ -40,10 +45,9 @@ from skimage.segmentation import clear_border
 from skimage.util import img_as_ubyte
 from sys import platform
 
-import matplotlib.mlab as mlab
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
+
+# Defining the file extension to save all generated images.
+FILE_EXT = '.jpg'
 
 
 def all_round_regions(sample_set, initial_radius=25, delta_radius=2,
@@ -256,6 +260,7 @@ def joining_candidates(dict_cand):
 
 
 def parameters_samples(var):
+    """Helping function. Returns the statistics of a variable in a tuple."""
 
     var_param = [np.mean(var), np.std(var)]
 
@@ -263,6 +268,8 @@ def parameters_samples(var):
 
 
 def px_to_um(px=25):
+    """Helping function. Converts pixels to um according to the microscopy
+    magnification."""
 
     ang_coef = 0.41402227
     lin_coef = 0.05954835
@@ -273,6 +280,9 @@ def px_to_um(px=25):
 
 
 def px_to_um2(diam_a=20, diam_b=25):
+    """Helping function. Converts pixels to um^2 according to the microscopy
+    magnification."""
+
 
     ang_coef = 0.41402227
     lin_coef = 0.05954835
@@ -345,7 +355,7 @@ def ratio_manauto(manual, auto, sample='kr', count_border=True,
                               ratio.std()])
 
     if save_figure:
-        plt.savefig('ratio_manauto.eps')
+        plt.savefig('ratio_manauto' + FILE_EXT)
     else:
         plt.show()
 
@@ -474,6 +484,46 @@ def segmentation_wusem(image, str_el='disk', initial_radius=10,
 
 def separate_tracks_set1(minutes='4,5min', folder='K90_incid', img_number=1,
                          best_args=(5, 4), count_border=True, save_tracks=False):
+    """Uses WUSEM to separate tracks in a folder from the first set.
+
+    Parameters
+    ----------
+    minutes : string, optional
+        Amount of minutes the image was etched. Possible values are '4,5min' and
+        '8,5min'. Default is '4,5min'.
+    folder : string, optional
+        Folder where the image is. Possible values are 'K0_incid', 'K20_incid',
+        ..., up to 'K90_incid'. Default is 'K90_incid'.
+    img_number : int, optional
+        Number of the image in the folder. Default is 1.
+    best_args : tuple, optional
+        Initial and delta radius to process this image. Default is (5, 4).
+    count_border : bool, optional
+        Whether the algorithm will consider counting the border or not. Default
+        is True.
+    save_tracks : bool, optional
+        Whether the algorithm will save the processed tracks into the disk.
+        Default is False.
+
+    Returns
+    -------
+    None
+
+    References
+    ----------
+    .. [1] F.M. Schaller et al. "Tomographic analysis of jammed ellipsoid
+    packings", in: AIP Conference Proceedings, 2013, 1542: 377-380. DOI:
+    10.1063/1.4811946.
+
+    Examples
+    --------
+    >>> from skimage.data import binary_blobs
+    >>> image = binary_blobs(length=512, seed=0)
+    >>> img_labels, num_objects, _ = segmentation_wusem(image,
+                                                        str_el='disk',
+                                                        initial_radius=10,
+                                                        delta_radius=3)
+    """
 
     img_name = 'orig_figures/dataset_01/Kr-78_' + minutes + '/' + folder + '/' + \
                folder + minutes + '_' + str(img_number) + '.bmp'
@@ -500,7 +550,7 @@ def separate_tracks_set1(minutes='4,5min', folder='K90_incid', img_number=1,
 
             if save_tracks:
                 track_name = folder + minutes + '_' + str(img_number) + \
-                             '_track_' + str(prop.label) + '.eps'
+                             '_track_' + str(prop.label) + FILE_EXT
                 plt.savefig(filename=track_name, bbox_inches='tight')
 
     return None
@@ -513,7 +563,7 @@ def separate_tracks_set2(img_number=1, best_args=(10, 8),
     img_name = info_name.loc[info_name['image_number'] == img_number,
                              'corresp_image'].iloc[0]
 
-    image = imread('orig_figures/dataset_02/' + img_name + '.jpg',
+    image = imread('orig_figures/dataset_02/' + img_name + FILE_EXT,
                    as_grey=True)
     labels, objects, _ = round_regions(image, initial_radius=best_args[0],
                                        delta_radius=best_args[1],
@@ -534,15 +584,14 @@ def separate_tracks_set2(img_number=1, best_args=(10, 8),
             ax.contourf(prop.intensity_image, cmap='magma')
 
             if save_tracks:
-                track_name = img_name + '_track_' + str(prop.label) + '.eps'
+                track_name = img_name + '_track_' + str(prop.label) + FILE_EXT
                 plt.savefig(filename=track_name, bbox_inches='tight')
 
     return None
 
 
-def sorting_candidates(list_candidates):
-    '''
-    '''
+def _sorting_candidates(list_candidates):
+    """Helping function. Sorts candidate numbers within a list."""
 
     aux, counted_list = [], []
 
@@ -555,7 +604,8 @@ def sorting_candidates(list_candidates):
     return sorted(counted_list, reverse=True, key=lambda count: count[1])
 
 
-def track_properties(properties, save_images=False):
+def _track_properties(properties, save_images=False):
+    """Helping function. Writes track properties to a file."""
 
     file = open('track_props.txt', 'w')
     file.write('object,minor_axis,major_axis,mean_gray\n')
@@ -574,7 +624,7 @@ def track_properties(properties, save_images=False):
         file.write(line_file)
 
         if save_images:
-            img_filename = 'track_' + str(prop.label) + '.eps'
+            img_filename = 'track_' + str(prop.label) + 
             plt.savefig(filename=img_filename, bbox_inches='tight')
         else:
             plt.show()
