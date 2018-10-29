@@ -589,7 +589,7 @@ def separate_tracks_set2(img_number=1, best_args=(10, 8),
     return None
 
 
-def _sorting_candidates(list_candidates):
+def sorting_candidates(list_candidates):
     """Helping function. Sorts candidate numbers within a list."""
 
     aux, counted_list = [], []
@@ -603,7 +603,7 @@ def _sorting_candidates(list_candidates):
     return sorted(counted_list, reverse=True, key=lambda count: count[1])
 
 
-def _track_properties(properties, save_images=False):
+def track_properties(properties, save_images=False):
     """Helping function. Writes track properties to a file."""
 
     file = open('track_props.txt', 'w')
