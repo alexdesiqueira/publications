@@ -12,7 +12,66 @@ from skimage.util import img_as_ubyte
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import timeit
+
+
+class TrackStats:
+    """
+    """
+
+    def __init__(self, ext_detector, int_surface):
+
+        self.ext_dec = ext_detector
+        self.int_surf = int_surface
+
+    def _calc_dist(self, sample):
+
+        n_sample = np.sum(sample)
+        sigma_n_sample = np.sqrt(n_sample)
+
+        return (n_sample, sigma_n_sample)
+
+    def _calc_rho(self, sample):
+
+        n_sample = np.sum(sample)
+        rho = np.mean(sample) / px_to_cm2()
+        relat_unc = 1/np.sqrt(n_sample)  # relative uncertainty
+        sigma_rho = relat_unc * rho
+
+        return (rho, sigma_rho)
+
+    @property
+    def n_extdec(self):
+
+        return self._calc_dist(self.ext_dec)
+
+    @property
+    def n_intsurf(self):
+
+        return self._calc_dist(self.int_surf)
+
+    @property
+    def rho_extdec(self):
+
+        return self._calc_rho(self.ext_dec)
+
+    @property
+    def rho_intsurf(self):
+
+        return self._calc_rho(self.int_surf)
+
+    @property
+    def gqr(self):
+
+        gqr = self.rho_extdec[0] / self.rho_intsurf[0]
+        relat_issq = 1/np.sqrt(self.n_intsurf[0]) ** 2
+        relat_edsq = 1/np.sqrt(self.n_extdec[0]) ** 2
+        sigma_gqr = np.sqrt(relat_edsq + relat_issq) * gqr
+
+        gqr = (gqr, sigma_gqr)
+
+        return gqr
 
 
 def angles_in_route(refer_pt, points):
@@ -41,6 +100,16 @@ def angles_in_route(refer_pt, points):
         angles.append(atan2(d_col, d_row))
 
     return angles
+
+
+def calibration(cal_curve='calibration/calibration_curve.csv', deg=1):
+    """
+    """
+
+    calib = pd.read_csv(cal_curve)
+    poly_coef = np.polyfit(x=calib['px'], y=calib['mm'], deg=deg)
+
+    return poly_coef
 
 
 def clear_rd_border(image):
@@ -208,6 +277,8 @@ def pixels_interest(image):
 
 
 def plot_and_count(image_bin, intensity_image=None, ax=None):
+    """
+    """
 
     if ax is None:
         ax = plt.gca()
@@ -257,6 +328,25 @@ def plot_and_count(image_bin, intensity_image=None, ax=None):
     ax.imshow(img_rgb, cmap='gray')
 
     return ax, total_tracks
+
+
+def px_to_mm2(poly_coef, len_x=760, len_y=570):
+    """
+    """
+
+    ang_coef, lin_coef = poly_coef
+    mm2 = (len_x*ang_coef + lin_coef) * (len_y*ang_coef + lin_coef)
+
+    return mm2
+
+
+def px_to_cm2(len_x=760, len_y=570):
+    """
+    """
+
+    poly_coef = calibration()
+
+    return px_to_mm2(poly_coef, len_x, len_y) * 1e-8
 
 
 def regions_and_skel(image_bin):

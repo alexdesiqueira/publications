@@ -1,4 +1,4 @@
-# Automatic counting of fission tracks in apatite and muscovite using image processing
+# Segmentation of nearly isotropic overlapped tracks in photomicrographs using successive erosions as watershed markers
 
 ## Alexandre Fioravante de Siqueira<sup>1,2</sup>, Wagner Massayuki Nakasuga<sup>1</sup>, Sandro Guedes de Oliveira<sup>1</sup>
 
@@ -6,13 +6,14 @@
 
 <sup>2</sup> _Institut für Geologie, TU Bergakademie Freiberg_
 
-* This paper is available on: [[arXiv]](https://arxiv.org/abs/1806.05199)
+* This paper is available on: [[arXiv]](https://arxiv.org/abs/1706.03282)
 
 ```
-Copyright (C) 2018 Alexandre Fioravante de Siqueira
+Copyright (C) 2017 Alexandre Fioravante de Siqueira
 
-This file is part of the supplementary material to 'Automatic counting
-of fission tracks in apatite and muscovite using image processing'.
+This file is part of the supplementary material to 'Segmentation of
+nearly isotropic overlapped tracks in photomicrographs using successive
+erosions as watershed markers'.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

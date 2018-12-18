@@ -21,18 +21,18 @@ Supplementary Material'. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from itertools import combinations
-from matplotlib.ticker import MultipleLocator
 from mpl_toolkits.axes_grid1 import host_subplot
 from scipy.ndimage import median_filter
 from scipy.ndimage.morphology import binary_fill_holes
 from skimage.color import gray2rgb
 from skimage.draw import line
 from skimage.filters import (threshold_otsu, threshold_yen, threshold_li,
-                             threshold_isodata, threshold_triangle)
+                             threshold_isodata)
 from skimage.graph import route_through_array
 from skimage.io import imread
 from skimage.measure import regionprops, label
 from skimage.morphology import remove_small_objects, skeletonize_3d
+from skimage.restoration import denoise_tv_chambolle
 from skimage.util import img_as_ubyte
 
 import desiqueira2018 as ds
@@ -41,21 +41,36 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import mpl_toolkits.axisartist as mpl_aa
 import numpy as np
+import os
 import pandas as pd
 import warnings
 
 # Setting up the figures appearance.
 plt.rcParams['font.family'] = 'monospace'
-plt.rcParams['font.size'] = 20
+plt.rcParams['font.size'] = 30
 plt.rcParams['axes.labelsize'] = plt.rcParams['font.size']
 plt.rcParams['axes.titlesize'] = 1.2*plt.rcParams['font.size']
 plt.rcParams['legend.fontsize'] = plt.rcParams['font.size']
 plt.rcParams['xtick.labelsize'] = plt.rcParams['font.size']
 plt.rcParams['ytick.labelsize'] = plt.rcParams['font.size']
 
-# defining helping variables.
-default_fontsize = 15
-offset = -15
+# Defining some helping variables.
+OFFSET = -15
+
+LINE_WIDTH = 7
+SCATTER_SIZE = 25
+
+COLOR_OTSU = '#482878'
+COLOR_YEN = '#3e4989'
+COLOR_LI = '#26828e'
+COLOR_ISO = '#6ece58'
+COLOR_MLSS = '#fde725'
+
+WEIGHT_FILTER = 0.05  # defining the weight for the TV Chambolle function.
+SAVE_FIG_FORMAT = '.pdf'
+
+MIN_SIZE = 25  # defining minimum size for processing a region.
+TEST_REGION = 26
 
 # Ignoring warnings.
 warnings.filterwarnings('ignore')
@@ -73,7 +88,11 @@ def figure_1():
                        as_grey=True)
 
     _, x_px = img_test1.shape
-    x_um = calibrate_aux(len_px=x_px)
+    x_um = _calibrate_aux(len_px=x_px)
+
+    # checking if the folder 'figures' exists.
+    if not os.path.isdir('./figures'):
+        os.mkdir('./figures')
 
     # Figure 1(a).
     fig = plt.figure(figsize=(12, 10))
@@ -86,12 +105,13 @@ def figure_1():
     new_fixed_ax = guest.get_grid_helper().new_fixed_axis
     guest.axis['bottom'] = new_fixed_ax(loc='bottom',
                                         axes=guest,
-                                        offset=(0, offset))
+                                        offset=(0, OFFSET))
     guest.axis['top'].toggle(all=False)
     guest.set_xlabel('$\mu m$')
     guest.set_xlim(0, x_um)
 
-    plt.savefig('Fig_1a.svg', bbox_inches='tight')
+    plt.savefig('figures/Fig_01a' + SAVE_FIG_FORMAT, bbox_inches='tight')
+    plt.close()
 
     # Figure 1(b).
     fig = plt.figure(figsize=(12, 10))
@@ -104,12 +124,12 @@ def figure_1():
     new_fixed_ax = guest.get_grid_helper().new_fixed_axis
     guest.axis['bottom'] = new_fixed_ax(loc='bottom',
                                         axes=guest,
-                                        offset=(0, offset))
+                                        offset=(0, OFFSET))
     guest.axis['top'].toggle(all=False)
     guest.set_xlabel('$\mu m$')
     guest.set_xlim(0, x_um)
 
-    plt.savefig('Fig_1b.svg', bbox_inches='tight')
+    plt.savefig('figures/Fig_01b' + SAVE_FIG_FORMAT, bbox_inches='tight')
     plt.close()
 
     return None
@@ -128,30 +148,28 @@ def figure_2():
     """
 
     image = imread('orig_figures/dur_grain1apatite01.tif', as_grey=True)
-    image = median_filter(image, size=(7, 7))
-
-    thresh = threshold_isodata(image)
-    img_bin = ds.clear_rd_border(
-                            binary_fill_holes(
-                                remove_small_objects(image < thresh)))
+    img_bin = _processed_image(image)
 
     props = regionprops(label(img_bin))
-    region = 18
 
-    x_min, y_min, x_max, y_max = props[region].bbox
+    x_min, y_min, x_max, y_max = props[TEST_REGION].bbox
 
     img_orig = image[x_min:x_max, y_min:y_max]
-    img_reg = props[region].image
-    img_skel = skeletonize_3d(props[region].image)
+    img_reg = props[TEST_REGION].image
+    img_skel = skeletonize_3d(props[TEST_REGION].image)
 
     _, x_px = img_skel.shape
-    x_um = calibrate_aux(len_px=x_px)
+    x_um = _calibrate_aux(len_px=x_px)
+
+    # checking if the folder 'figures' exists.
+    if not os.path.isdir('./figures'):
+        os.mkdir('./figures')
 
     # Figure 2(a).
     image_arrow = imread('misc/Fig01a.tif')
     _, xarr_px, _ = image_arrow.shape
 
-    xarr_um = calibrate_aux(len_px=xarr_px)
+    xarr_um = _calibrate_aux(len_px=xarr_px)
 
     fig = plt.figure(figsize=(12, 10))
     host = host_subplot(111, axes_class=mpl_aa.Axes)
@@ -163,15 +181,16 @@ def figure_2():
     new_fixed_ax = guest.get_grid_helper().new_fixed_axis
     guest.axis['bottom'] = new_fixed_ax(loc='bottom',
                                         axes=guest,
-                                        offset=(0, offset))
+                                        offset=(0, OFFSET))
     guest.axis['top'].toggle(all=False)
     guest.set_xlabel('$\mu m$')
     guest.set_xlim(0, xarr_um)
-    
-    plt.savefig('Fig_2a.svg', bbox_inches='tight')
+
+    plt.savefig('figures/Fig_02a' + SAVE_FIG_FORMAT, bbox_inches='tight')
     plt.close()
 
     # Figure 2(b).
+    fig = plt.figure(figsize=(12, 10))
     host = host_subplot(111, axes_class=mpl_aa.Axes)
     plt.subplots_adjust(bottom=0.2)
     host.imshow(img_orig, cmap='gray')
@@ -181,15 +200,16 @@ def figure_2():
     new_fixed_ax = guest.get_grid_helper().new_fixed_axis
     guest.axis['bottom'] = new_fixed_ax(loc='bottom',
                                         axes=guest,
-                                        offset=(0, offset))
+                                        offset=(0, OFFSET))
     guest.axis['top'].toggle(all=False)
     guest.set_xlabel('$\mu m$')
     guest.set_xlim(0, x_um)
 
-    plt.savefig('Fig_2b.svg', bbox_inches='tight')
+    plt.savefig('figures/Fig_02b' + SAVE_FIG_FORMAT, bbox_inches='tight')
     plt.close()
 
     # Figure 2(c).
+    fig = plt.figure(figsize=(12, 10))
     host = host_subplot(111, axes_class=mpl_aa.Axes)
     plt.subplots_adjust(bottom=0.2)
     host.imshow(img_reg, cmap='gray')
@@ -199,15 +219,16 @@ def figure_2():
     new_fixed_ax = guest.get_grid_helper().new_fixed_axis
     guest.axis['bottom'] = new_fixed_ax(loc='bottom',
                                         axes=guest,
-                                        offset=(0, offset))
+                                        offset=(0, OFFSET))
     guest.axis['top'].toggle(all=False)
     guest.set_xlabel('$\mu m$')
     guest.set_xlim(0, x_um)
 
-    plt.savefig('Fig_2c.svg', bbox_inches='tight')
+    plt.savefig('figures/Fig_02c' + SAVE_FIG_FORMAT, bbox_inches='tight')
     plt.close()
 
     # Figure 2(d).
+    fig = plt.figure(figsize=(12, 10))
     host = host_subplot(111, axes_class=mpl_aa.Axes)
     plt.subplots_adjust(bottom=0.2)
     host.imshow(img_skel, cmap='gray')
@@ -217,12 +238,12 @@ def figure_2():
     new_fixed_ax = guest.get_grid_helper().new_fixed_axis
     guest.axis['bottom'] = new_fixed_ax(loc='bottom',
                                         axes=guest,
-                                        offset=(0, offset))
+                                        offset=(0, OFFSET))
     guest.axis['top'].toggle(all=False)
     guest.set_xlabel('$\mu m$')
     guest.set_xlim(0, x_um)
 
-    plt.savefig('Fig_2d.svg', bbox_inches='tight')
+    plt.savefig('figures/Fig_02d' + SAVE_FIG_FORMAT, bbox_inches='tight')
     plt.close()
 
     return None
@@ -235,20 +256,20 @@ def figure_4():
     """
 
     image = imread('orig_figures/dur_grain1apatite01.tif', as_grey=True)
-    image = median_filter(image, size=(7, 7))
-
-    thresh = threshold_isodata(image)
-    img_bin = binary_fill_holes(remove_small_objects(image < thresh))
+    img_bin = _processed_image(image)
 
     props = regionprops(label(img_bin))
-    region = 18
 
-    x_min, y_min, x_max, y_max = props[region].bbox
-    img_skel = skeletonize_3d(props[region].image)
+    x_min, y_min, x_max, y_max = props[TEST_REGION].bbox
+    img_skel = skeletonize_3d(props[TEST_REGION].image)
     _, x_px = img_skel.shape
-    x_um = calibrate_aux(len_px=x_px)
+    x_um = _calibrate_aux(len_px=x_px)
 
     px_ext, px_int = ds.pixels_interest(img_skel)
+
+    # checking if the folder 'figures' exists.
+    if not os.path.isdir('./figures'):
+        os.mkdir('./figures')
 
     # Figure 4.
     fig = plt.figure(figsize=(9, 8))
@@ -261,18 +282,19 @@ def figure_4():
     new_fixed_ax = guest.get_grid_helper().new_fixed_axis
     guest.axis['bottom'] = new_fixed_ax(loc='bottom',
                                         axes=guest,
-                                        offset=(0, offset))
+                                        offset=(0, OFFSET))
     guest.axis['top'].toggle(all=False)
     guest.set_xlabel('$\mu m$')
     guest.set_xlim(0, x_um)
 
     for _, (y0_px, x0_px) in enumerate(px_ext):
         # extremity pixels
-        host.scatter(x0_px, y0_px, c='g')
+        host.scatter(x0_px, y0_px, c='g', s=SCATTER_SIZE)
     for _, (y0_px, x0_px) in enumerate(px_int):
         # intersection pixels
-        host.scatter(x0_px, y0_px, c='b')
-    plt.savefig('Fig_04.pdf', bbox_inches='tight')
+        host.scatter(x0_px, y0_px, c='b', s=SCATTER_SIZE)
+    plt.savefig('figures/Fig_04' + SAVE_FIG_FORMAT, bbox_inches='tight')
+    plt.close()
 
     return None
 
@@ -287,19 +309,16 @@ def figure_5():
     """
 
     image = imread('orig_figures/dur_grain1apatite01.tif', as_grey=True)
-    image = median_filter(image, size=(7, 7))
-
-    thresh = threshold_isodata(image)
-    img_bin = binary_fill_holes(
-                remove_small_objects(
-                    image < thresh))
-
+    img_bin = _processed_image(image)
     props = regionprops(label(img_bin))
 
-    region = 18
-    img_skel = skeletonize_3d(props[region].image)
+    img_skel = skeletonize_3d(props[TEST_REGION].image)
     _, x_px = img_skel.shape
-    x_um = calibrate_aux(len_px=x_px)
+    x_um = _calibrate_aux(len_px=x_px)
+
+    # checking if the folder 'figures' exists.
+    if not os.path.isdir('./figures'):
+        os.mkdir('./figures')
 
     px_ext, _ = ds.pixels_interest(img_skel)
 
@@ -325,12 +344,12 @@ def figure_5():
         plt.subplots_adjust(bottom=0.2)
 
         for pt in route:
-            host.scatter(pt[1], pt[0], c='b')
+            host.scatter(pt[1], pt[0], c='b', s=SCATTER_SIZE)
             region_area[pt[0], pt[1]] = True
 
         # extremity points.
-        host.scatter(px[1], px[0], c='g')
-        host.scatter(py[1], py[0], c='g')
+        host.scatter(px[1], px[0], c='g', s=SCATTER_SIZE)
+        host.scatter(py[1], py[0], c='g', s=SCATTER_SIZE)
 
         region_area = binary_fill_holes(region_area)
 
@@ -347,12 +366,12 @@ def figure_5():
         new_fixed_ax = guest.get_grid_helper().new_fixed_axis
         guest.axis['bottom'] = new_fixed_ax(loc='bottom',
                                             axes=guest,
-                                            offset=(0, offset))
+                                            offset=(0, OFFSET))
         guest.axis['top'].toggle(all=False)
         guest.set_xlabel('$\mu m$')
         guest.set_xlim(0, x_um)
 
-        filename = 'Fig_5' + figures[idx] + '.svg'
+        filename = 'figures/Fig_05' + figures[idx] + SAVE_FIG_FORMAT
         plt.savefig(filename, bbox_inches='tight')
         plt.close()
 
@@ -368,20 +387,20 @@ def figure_6():
     """
 
     image = imread('orig_figures/dur_grain1apatite01.tif', as_grey=True)
-    image = median_filter(image, size=(7, 7))
-
-    thresh = threshold_isodata(image)
-    img_bin = binary_fill_holes(remove_small_objects(image < thresh))
+    img_bin = _processed_image(image)
 
     props = regionprops(label(img_bin))
-    region = 18
 
-    x_min, y_min, x_max, y_max = props[region].bbox
-    img_skel = skeletonize_3d(props[region].image)
+    x_min, y_min, x_max, y_max = props[TEST_REGION].bbox
+    img_skel = skeletonize_3d(props[TEST_REGION].image)
     _, x_px = img_skel.shape
-    x_um = calibrate_aux(len_px=x_px)
+    x_um = _calibrate_aux(len_px=x_px)
 
     _, trk_pts = ds.tracks_classify(img_skel)
+
+    # Checking if the folder 'figures' exists.
+    if not os.path.isdir('./figures'):
+        os.mkdir('./figures')
 
     # Generating all figures at once.
     figures = ['a', 'b']
@@ -410,20 +429,21 @@ def figure_6():
         new_fixed_ax = guest.get_grid_helper().new_fixed_axis
         guest.axis['bottom'] = new_fixed_ax(loc='bottom',
                                             axes=guest,
-                                            offset=(0, offset))
+                                            offset=(0, OFFSET))
         guest.axis['top'].toggle(all=False)
         guest.set_xlabel('$\mu m$')
         guest.set_xlim(0, x_um)
 
         for rt_pt in route:
-            host.scatter(rt_pt[1], rt_pt[0], c='b')
+            host.scatter(rt_pt[1], rt_pt[0], c='b', s=SCATTER_SIZE)
 
         # plotting extreme points.
         for p in pt:
-            host.scatter(p[1], p[0], c='g')
+            host.scatter(p[1], p[0], c='g', s=SCATTER_SIZE)
 
-        filename = 'Fig_6' + figures[idx] + '.svg'
+        filename = 'figures/Fig_06' + figures[idx] + SAVE_FIG_FORMAT
         plt.savefig(filename, bbox_inches='tight')
+        plt.close()
 
     return None
 
@@ -440,22 +460,21 @@ def figure_7():
     """
 
     image = imread('orig_figures/dur_grain1apatite01.tif', as_grey=True)
-    image = median_filter(image, size=(7, 7))
+    img_bin = _processed_image(image)
 
     _, x_px = image.shape
-    x_um = calibrate_aux(len_px=x_px)
+    x_um = _calibrate_aux(len_px=x_px)
 
-    thresh = threshold_isodata(image)
-    image_bin = binary_fill_holes(
-                    remove_small_objects(
-                        image < thresh))
-
-    props = regionprops(label(image_bin))
-    img_skel = skeletonize_3d(image_bin)
+    props = regionprops(label(img_bin))
+    img_skel = skeletonize_3d(img_bin)
     rows, cols = np.where(img_skel != 0)
 
     img_rgb = gray2rgb(img_as_ubyte(image))
     img_rgb[rows, cols] = [255, 0, 255]
+
+    # Checking if the folder 'figures' exists.
+    if not os.path.isdir('./figures'):
+        os.mkdir('./figures')
 
     fig = plt.figure(figsize=(12, 10))
     host = host_subplot(111, axes_class=mpl_aa.Axes)
@@ -473,16 +492,18 @@ def figure_7():
                          str(count_auto[2][0][0])])
         for obj in obj_info:
             host.text(obj[1], obj[0], obj[2], family='monospace',
-                      color='yellow', size='medium', weight='bold')
+                      color='yellow', size='x-small', weight='bold')
 
         if trk_area is not None:
             for px in trk_px:
                 route, _ = route_through_array(~aux, px[0], px[1])
 
                 for rx in route:
-                    host.scatter(y_min+rx[1], x_min+rx[0], s=20, c='b')
+                    host.scatter(y_min+rx[1], x_min+rx[0],
+                                 c='b', s=SCATTER_SIZE+25)
                 for p in px:
-                    host.scatter(y_min+p[1], x_min+p[0], s=20, c='g')
+                    host.scatter(y_min+p[1], x_min+p[0],
+                                 c='g', s=SCATTER_SIZE+25)
 
                 rows, cols = line(x_min+px[0][0], y_min+px[0][1],
                                   x_min+px[1][0], y_min+px[1][1])
@@ -494,13 +515,13 @@ def figure_7():
     guest = host.twiny()
     new_fixed_ax = guest.get_grid_helper().new_fixed_axis
     guest.axis['bottom'] = new_fixed_ax(loc='bottom',
-                                            axes=guest,
-                                            offset=(0, offset))
+                                        axes=guest,
+                                        offset=(0, OFFSET))
     guest.axis['top'].toggle(all=False)
     guest.set_xlabel('$\mu m$')
     guest.set_xlim(0, x_um)
 
-    plt.savefig('Fig_07.pdf', bbox_inches='tight')
+    plt.savefig('figures/Fig_07' + SAVE_FIG_FORMAT, bbox_inches='tight')
     plt.close()
 
     return None
@@ -523,6 +544,10 @@ def figure_8():
                   count_time[count_time['sample'] == 'mica']['li'],
                   count_time[count_time['sample'] == 'mica']['isodata'],
                   count_time[count_time['sample'] == 'mica']['mlss']]
+
+    # Checking if the folder 'figures' exists.
+    if not os.path.isdir('./figures'):
+        os.mkdir('./figures')
 
     pos = list(range(5))
     box_colors = ['#482878', '#3e4989', '#26828e', '#6ece58', '#fde725']
@@ -570,162 +595,154 @@ def figure_8():
     ax.set_xlabel('Binarization algorithm')
     ax.set_ylabel('Counting time (s)')
 
-    plt.savefig('Fig_08.pdf', bbox_inches='tight')
+    plt.savefig('figures/Fig_08' + SAVE_FIG_FORMAT, bbox_inches='tight')
+    plt.close()
 
     return None
 
 
 def figure_9():
     """
-    Figure 9. Original regions, their binary correspondents, and
-    the results of the presented method. For instance, a region with
-    two tracks could be counted as having one or three tracks,
-    according to different binarization algorithms. Green dots:
-    extremity pixels. Magenta lines: skeleton result. Blue paths:
-    track candidate counted by the algorithm.
+    Figure 9. Comparison between manual and automatic counting with the
+    proposed method in the test photomicrographs. The colored lines
+    represent the data linear regression. Binarizations used: (a) Otsu,
+    (b) Yen, (c) Li, (d) ISODATA, and (e) MLSS. Dashed line: 1:1 line.
     """
 
-    image = imread('orig_figures/dur_grain1apatite01.tif', as_grey=True)
-    image = median_filter(image, size=(7, 7))
+    manual_mica = ds.manual_counting(mineral='mica')
+    manual_apatite = ds.manual_counting(mineral='apatite')
+    manual = manual_mica + manual_apatite
 
-    imgbin_otsu = binary_fill_holes(
-        remove_small_objects(image < threshold_otsu(image)))
+    # Checking if the folder 'figures' exists.
+    if not os.path.isdir('./figures'):
+        os.mkdir('./figures')
 
-    imgbin_yen = binary_fill_holes(
-        remove_small_objects(image < threshold_yen(image)))
+    # Figure 9 (a).
+    autootsu_mica = list(np.loadtxt('auto_count/autootsu_mica.csv',
+                                    delimiter=','))
+    autootsu_apatite = list(np.loadtxt('auto_count/autootsu_apatite.csv',
+                                       delimiter=','))
+    autootsu = autootsu_mica + autootsu_apatite
 
-    imgbin_li = binary_fill_holes(
-        remove_small_objects(image < threshold_li(image)))
+    fig, ax = plt.subplots(figsize=(16, 10))
+    x = np.linspace(0, 250, 1000)
+    ax.plot(manual, autootsu, marker='.', linestyle='None',
+            markeredgecolor='black', color=COLOR_OTSU,
+            markersize=SCATTER_SIZE+15)
 
-    imgbin_isodata = binary_fill_holes(
-        remove_small_objects(image < threshold_isodata(image)))
+    fit = np.polyfit(manual, autootsu, deg=1)
+    fit_fn = np.poly1d(fit)
 
-    filename = 'auto_count/mlss/imgbin_mlss18.csv'
-    aux = pd.read_csv(filename)
-    imgbin_mlss = binary_fill_holes(remove_small_objects(
-        np.asarray(aux, dtype='bool')))
+    ax.plot(x, fit_fn(x), linewidth=LINE_WIDTH, color=COLOR_OTSU)
+    ax.plot(x, x, '--', color='k')
+    ax.set_xlabel('Manual counting')
+    ax.set_ylabel('Automatic counting')
+    plt.savefig('figures/Fig_09a' + SAVE_FIG_FORMAT,
+                bbox_inches='tight')
+    plt.close()
 
-    props = regionprops(label(imgbin_mlss))
+    # Figure 9 (b).
+    autoyen_mica = list(np.loadtxt('auto_count/autoyen_mica.csv',
+                                   delimiter=','))
+    autoyen_apatite = list(np.loadtxt('auto_count/autoyen_apatite.csv',
+                                      delimiter=','))
+    autoyen = autoyen_mica + autoyen_apatite
 
-    # Generating all figures at once.
-    figures = ['a', 'b', 'c', 'd', 'e', 'f']
+    fig, ax = plt.subplots(figsize=(16, 10))
+    x = np.linspace(0, 250, 1000)
+    ax.plot(manual, autoyen, marker='.', linestyle='None',
+            markeredgecolor='black', color=COLOR_YEN,
+            markersize=SCATTER_SIZE+15)
 
-    for idx, num in enumerate([1, 3, 6, 53, 84, 95]):
-        x_min, y_min, x_max, y_max = props[num].bbox
+    fit = np.polyfit(manual, autoyen, deg=1)
+    fit_fn = np.poly1d(fit)
 
-        _, x_px = image[x_min:x_max, y_min:y_max].shape
-        x_um = calibrate_aux(len_px=x_px)
+    ax.plot(x, fit_fn(x), linewidth=LINE_WIDTH, color=COLOR_YEN)
+    ax.plot(x, x, '--', color='k')
+    ax.set_xlabel('Manual counting')
+    ax.set_ylabel('Automatic counting')
+    plt.savefig('figures/Fig_09b' + SAVE_FIG_FORMAT,
+                bbox_inches='tight')
+    plt.close()
 
-        if figures[idx] in ['b', 'f']:
-            fig = plt.figure(figsize=(24, 2))
-        else:
-            fig = plt.figure(figsize=(24, 6))
-        # SubFig 1: Original.
-        host = host_subplot(161, axes_class=mpl_aa.Axes)
-        plt.subplots_adjust(bottom=0.2)
+    # Figure 9 (c).
+    autoli_mica = list(np.loadtxt('auto_count/autoli_mica.csv',
+                                  delimiter=','))
+    autoli_apatite = list(np.loadtxt('auto_count/autoli_apatite.csv',
+                                     delimiter=','))
+    autoli = autoli_mica + autoli_apatite
 
-        host.imshow(image[x_min:x_max, y_min:y_max], cmap='gray')
-        host.axis['bottom', 'left'].toggle(all=False)
+    fig, ax = plt.subplots(figsize=(16, 10))
+    x = np.linspace(0, 250, 1000)
+    ax.plot(manual, autoli, marker='.', linestyle='None',
+            markeredgecolor='black', color=COLOR_LI,
+            markersize=SCATTER_SIZE+15)
 
-        guest = host.twiny()
-        new_fixed_ax = guest.get_grid_helper().new_fixed_axis
-        guest.axis['bottom'] = new_fixed_ax(loc='bottom',
-                                            axes=guest,
-                                            offset=(0, offset))
-        guest.axis['top'].toggle(all=False)
-        guest.set_xlabel('$\mu m$\n Original')
-        guest.set_xlim(0, x_um)
+    fit = np.polyfit(manual, autoli, deg=1)
+    fit_fn = np.poly1d(fit)
 
-        # SubFig 2: Otsu.
-        host = host_subplot(162, axes_class=mpl_aa.Axes)
-        plt.subplots_adjust(bottom=0.2)
+    ax.plot(x, fit_fn(x), linewidth=LINE_WIDTH, color=COLOR_LI)
+    ax.plot(x, x, '--', color='k')
+    ax.set_xlabel('Manual counting')
+    ax.set_ylabel('Automatic counting')
+    plt.savefig('figures/Fig_09c' + SAVE_FIG_FORMAT,
+                bbox_inches='tight')
+    plt.close()
 
-        plot_aux(imgbin_otsu[x_min:x_max, y_min:y_max], ax=host)
-        host.axis['bottom', 'left'].toggle(all=False)
+    # Figure 9 (d).
+    autoiso_mica = list(np.loadtxt('auto_count/autoiso_mica.csv',
+                                   delimiter=','))
+    autoiso_apatite = list(np.loadtxt('auto_count/autoiso_apatite.csv',
+                                      delimiter=','))
+    autoiso = autoiso_mica + autoiso_apatite
 
-        guest = host.twiny()
-        new_fixed_ax = guest.get_grid_helper().new_fixed_axis
-        guest.axis['bottom'] = new_fixed_ax(loc='bottom',
-                                            axes=guest,
-                                            offset=(0, offset))
-        guest.axis['top'].toggle(all=False)
-        guest.set_xlabel('$\mu m$\n Otsu')
-        guest.set_xlim(0, x_um)
+    fig, ax = plt.subplots(figsize=(16, 10))
+    x = np.linspace(0, 250, 1000)
+    ax.plot(manual, autoiso, marker='.', linestyle='None',
+            markeredgecolor='black', color=COLOR_ISO,
+            markersize=SCATTER_SIZE+15)
 
-        # SubFig 3: Yen.
-        host = host_subplot(163, axes_class=mpl_aa.Axes)
-        plt.subplots_adjust(bottom=0.2)
+    fit = np.polyfit(manual, autoiso, deg=1)
+    fit_fn = np.poly1d(fit)
 
-        plot_aux(imgbin_yen[x_min:x_max, y_min:y_max], ax=host)
-        host.axis['bottom', 'left'].toggle(all=False)
+    ax.plot(x, fit_fn(x), linewidth=LINE_WIDTH, color=COLOR_ISO)
+    ax.plot(x, x, '--', color='k')
+    ax.set_xlabel('Manual counting')
+    ax.set_ylabel('Automatic counting')
+    plt.savefig('figures/Fig_09d' + SAVE_FIG_FORMAT,
+                bbox_inches='tight')
+    plt.close()
 
-        guest = host.twiny()
-        new_fixed_ax = guest.get_grid_helper().new_fixed_axis
-        guest.axis['bottom'] = new_fixed_ax(loc='bottom',
-                                            axes=guest,
-                                            offset=(0, offset))
-        guest.axis['top'].toggle(all=False)
-        guest.set_xlabel('$\mu m$\n Yen')
-        guest.set_xlim(0, x_um)
+    # Figure 9 (e).
+    automlss_mica = list(np.loadtxt('auto_count/automlss_mica.csv',
+                                    delimiter=','))
+    automlss_apatite = list(np.loadtxt('auto_count/automlss_apatite.csv',
+                                       delimiter=','))
+    automlss = automlss_mica + automlss_apatite
 
-        # SubFig 4: Li.
-        host = host_subplot(164, axes_class=mpl_aa.Axes)
-        plt.subplots_adjust(bottom=0.2)
+    fig, ax = plt.subplots(figsize=(16, 10))
+    x = np.linspace(0, 250, 1000)
+    ax.plot(manual, automlss, marker='.', linestyle='None',
+            markeredgecolor='black', color=COLOR_MLSS,
+            markersize=SCATTER_SIZE+15)
 
-        plot_aux(imgbin_li[x_min:x_max, y_min:y_max], ax=host)
-        host.axis['bottom', 'left'].toggle(all=False)
+    fit = np.polyfit(manual, automlss, deg=1)
+    fit_fn = np.poly1d(fit)
 
-        guest = host.twiny()
-        new_fixed_ax = guest.get_grid_helper().new_fixed_axis
-        guest.axis['bottom'] = new_fixed_ax(loc='bottom',
-                                            axes=guest,
-                                            offset=(0, offset))
-        guest.axis['top'].toggle(all=False)
-        guest.set_xlabel('$\mu m$\n Li')
-        guest.set_xlim(0, x_um)
-
-        # SubFig 5: ISODATA.
-        host = host_subplot(165, axes_class=mpl_aa.Axes)
-        plt.subplots_adjust(bottom=0.2)
-
-        plot_aux(imgbin_isodata[x_min:x_max, y_min:y_max], ax=host)
-        host.axis['bottom', 'left'].toggle(all=False)
-
-        guest = host.twiny()
-        new_fixed_ax = guest.get_grid_helper().new_fixed_axis
-        guest.axis['bottom'] = new_fixed_ax(loc='bottom',
-                                            axes=guest,
-                                            offset=(0, offset))
-        guest.axis['top'].toggle(all=False)
-        guest.set_xlabel('$\mu m$\n ISODATA')
-        guest.set_xlim(0, x_um)
-
-        # SubFig 6: MLSS.
-        host = host_subplot(166, axes_class=mpl_aa.Axes)
-        plt.subplots_adjust(bottom=0.2)
-
-        plot_aux(imgbin_mlss[x_min:x_max, y_min:y_max], ax=host)
-        host.axis['bottom', 'left'].toggle(all=False)
-
-        guest = host.twiny()
-        new_fixed_ax = guest.get_grid_helper().new_fixed_axis
-        guest.axis['bottom'] = new_fixed_ax(loc='bottom',
-                                            axes=guest,
-                                            offset=(0, offset))
-        guest.axis['top'].toggle(all=False)
-        guest.set_xlabel('$\mu m$\n MLSS')
-        guest.set_xlim(0, x_um)
-
-        filename = 'Fig_9' + figures[idx] + '.svg'
-        plt.savefig(filename, bbox_inches='tight')
-        plt.close()
+    ax.plot(x, fit_fn(x), linewidth=LINE_WIDTH, color=COLOR_MLSS)
+    ax.plot(x, x, '--', color='k')
+    ax.set_xlabel('Manual counting')
+    ax.set_ylabel('Automatic counting')
+    plt.savefig('figures/Fig_09e' + SAVE_FIG_FORMAT,
+                bbox_inches='tight')
+    plt.close()
 
     return None
 
 
-def figure_11():
+def figure_10():
     """
-    Figure 11. Counting tracks in Figure 2(a). MLSS binarization creates
+    Figure 10. Counting tracks in Figure 2(a). MLSS binarization creates
     artifacts in the resulting binary image, thus misleading the track
     counting algorithm, which counts 115 tracks. (a) MLSS binary image
     obtained from Figure 2, presenting the generated artifacts. (b)
@@ -736,48 +753,49 @@ def figure_11():
 
     image = imread('orig_figures/dur_grain1mica01.tif', as_grey=True)
 
-    filename = 'auto_count/mlss/imgbin_mlss1.csv'
+    filename = 'auto_count/mlss/dur_grain1mica01.csv'
     aux = pd.read_csv(filename)
-    image_bin = binary_fill_holes(
-                    remove_small_objects(np.asarray(aux,
-                                                    dtype='bool')))
+    img_bin = binary_fill_holes(
+        remove_small_objects(np.asarray(aux, dtype='bool')))
 
-    _, x_px = image_bin.shape
-    x_um = calibrate_aux(len_px=x_px)
+    _, x_px = img_bin.shape
+    x_um = _calibrate_aux(len_px=x_px)
 
-    # Figure 11(a).
+    # Checking if the folder 'figures' exists.
+    if not os.path.isdir('./figures'):
+        os.mkdir('./figures')
+
+    # Figure 10(a).
     fig = plt.figure(figsize=(12, 10))
     host = host_subplot(111, axes_class=mpl_aa.Axes)
     plt.subplots_adjust(bottom=0.2)
-    host.imshow(image_bin, cmap='gray')
+
+    host.imshow(img_bin, cmap='gray')
     host.axis['bottom', 'left'].toggle(all=False)
 
     guest = host.twiny()
     new_fixed_ax = guest.get_grid_helper().new_fixed_axis
     guest.axis['bottom'] = new_fixed_ax(loc='bottom',
                                         axes=guest,
-                                        offset=(0, offset))
+                                        offset=(0, OFFSET))
     guest.axis['top'].toggle(all=False)
     guest.set_xlabel('$\mu m$')
     guest.set_xlim(0, x_um)
-    plt.savefig('Fig_11a.svg', bbox_inches='tight')
+    plt.savefig('figures/Fig_10a' + SAVE_FIG_FORMAT,
+                bbox_inches='tight')
     plt.close()
 
-    # Figure 11(b).
-    fig = plt.figure(figsize=(15, 10))
+    # Figure 10(b).
+    fig = plt.figure(figsize=(12, 10))
     host = host_subplot(111, axes_class=mpl_aa.Axes)
     plt.subplots_adjust(bottom=0.2)
 
-    props = regionprops(label(image_bin))
-    img_skel = skeletonize_3d(image_bin)
+    props = regionprops(label(img_bin))
+    img_skel = skeletonize_3d(img_bin)
     rows, cols = np.where(img_skel != 0)
 
     img_rgb = gray2rgb(img_as_ubyte(image))
     img_rgb[rows, cols] = [255, 0, 255]
-
-    fig = plt.figure(figsize=(12, 10))
-    host = host_subplot(111, axes_class=mpl_aa.Axes)
-    plt.subplots_adjust(bottom=0.2)
 
     for prop in props:
         obj_info = []
@@ -791,16 +809,18 @@ def figure_11():
                          str(count_auto[2][0][0])])
         for obj in obj_info:
             host.text(obj[1], obj[0], obj[2], family='monospace',
-                      color='yellow', size='medium', weight='bold')
+                      color='yellow', size='x-small', weight='bold')
 
         if trk_area is not None:
             for px in trk_px:
                 route, _ = route_through_array(~aux, px[0], px[1])
 
                 for rx in route:
-                    host.scatter(y_min+rx[1], x_min+rx[0], s=20, c='b')
+                    host.scatter(y_min+rx[1], x_min+rx[0],
+                                 c='b', s=SCATTER_SIZE+25)
                 for p in px:
-                    host.scatter(y_min+p[1], x_min+p[0], s=20, c='g')
+                    host.scatter(y_min+p[1], x_min+p[0],
+                                 c='g', s=SCATTER_SIZE+25)
 
                 rows, cols = line(x_min+px[0][0], y_min+px[0][1],
                                   x_min+px[1][0], y_min+px[1][1])
@@ -812,19 +832,20 @@ def figure_11():
     guest = host.twiny()
     new_fixed_ax = guest.get_grid_helper().new_fixed_axis
     guest.axis['bottom'] = new_fixed_ax(loc='bottom',
-                                            axes=guest,
-                                            offset=(0, offset))
+                                        axes=guest,
+                                        offset=(0, OFFSET))
     guest.axis['top'].toggle(all=False)
     guest.set_xlabel('$\mu m$')
     guest.set_xlim(0, x_um)
 
-    plt.savefig('Fig_11b.tif', bbox_inches='tight')
+    plt.savefig('figures/Fig_10b' + SAVE_FIG_FORMAT,
+                bbox_inches='tight')
     plt.close()
 
     return None
 
 
-def calibrate_aux(len_px=760):
+def _calibrate_aux(len_px=760):
     """
     """
 
@@ -837,7 +858,7 @@ def calibrate_aux(len_px=760):
     return um
 
 
-def plot_aux(image, ax=None):
+def _plot_aux(image, ax=None):
     """
     """
 
@@ -865,17 +886,38 @@ def plot_aux(image, ax=None):
 
                 # plotting route.
                 for rx in route:
-                    ax.scatter(y_min+rx[1], x_min+rx[0], s=50, c='b')
+                    ax.scatter(y_min+rx[1], x_min+rx[0],
+                               c='b', s=SCATTER_SIZE+25)
 
                 # plotting extreme points.
                 for p in px:
-                    ax.scatter(y_min+p[1], x_min+p[0], s=50, c='g')
+                    ax.scatter(y_min+p[1], x_min+p[0],
+                               c='g', s=SCATTER_SIZE+25)
 
                 rows, cols = line(x_min+px[0][0], y_min+px[0][1],
                                   x_min+px[1][0], y_min+px[1][1])
                 img_rgb[rows, cols] = [0, 255, 0]
 
     return ax
+
+
+def _processed_image(image, threshold='isodata'):
+    """
+    """
+
+    func_thresh = {'otsu': threshold_otsu,
+                   'yen': threshold_yen,
+                   'li': threshold_li,
+                   'isodata': threshold_isodata,
+                   }.get(threshold, threshold_isodata)
+
+    image = denoise_tv_chambolle(image, weight=WEIGHT_FILTER)
+    thresh = func_thresh(image)
+    img_bin = ds.clear_rd_border(remove_small_objects(
+        binary_fill_holes(image < thresh),
+        min_size=MIN_SIZE))
+
+    return img_bin
 
 
 def generate_all_figures():
