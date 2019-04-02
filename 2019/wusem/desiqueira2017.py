@@ -32,7 +32,7 @@ from scipy.ndimage.morphology import (binary_fill_holes,
 from scipy.stats import norm
 from skimage import morphology
 from skimage.color import gray2rgb
-from skimage.io import imread, imread_collection
+from skimage.io import ImageCollection, imread, imread_collection
 from skimage.filters import threshold_isodata
 from skimage.measure import regionprops, label
 from skimage.morphology import remove_small_objects
@@ -45,12 +45,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-# Defining the file extension to save all generated images.
-FILE_EXT = '.jpg'
 
-
-def all_round_regions(sample_set, initial_radius=25, delta_radius=2,
-                      eccentricity=0.3, count_border=True):
+def all_round_regions(sample_set, initial_radius=10, delta_radius=5,
+                      eccentricity=0.3):
     """Returns and saves data from round objects within each image of
     dataset 1.
 
@@ -66,9 +63,6 @@ def all_round_regions(sample_set, initial_radius=25, delta_radius=2,
     eccentricity : float, optional (default : 0.3)
         Defines the eccentricity tolerance. The region has to be an
         eccentricity smaller than this value to be considered a track.
-    count_border : bool, optional(default : True)
-        Chooses whether to use the scenario 'considering track borders'
-        (True) or 'ignoring track borders' (False).
 
     Returns
     -------
@@ -77,9 +71,9 @@ def all_round_regions(sample_set, initial_radius=25, delta_radius=2,
     Examples
     --------
     >>> all_round_regions('Kr-78_4,5min', first_step=5, step=4,
-                          eccentricity=0.3, count_border=True)
+                          eccentricity=0.3)
     >>> all_round_regions('Kr-78_8,5min', first_step=20, step=5,
-                          eccentricity=0.45, count_border=True)
+                          eccentricity=0.45)
     """
 
     folders = ['K0_incid', 'K20_incid', 'K30_incid', 'K40_incid',
@@ -87,8 +81,8 @@ def all_round_regions(sample_set, initial_radius=25, delta_radius=2,
                'K90_incid']
 
     for sample in sample_set:
-        file = open('roundinfo_' + sample + '_' + str(count_border)[0] +
-                    '.txt', 'w')
+        file = open('auto_count/roundinfo_dataset01_' + sample + '.txt',
+                    'w')
         header = 'folder,image,object,minor_axis,major_axis,mean_gray\n'
         file.write(header)
 
@@ -101,8 +95,7 @@ def all_round_regions(sample_set, initial_radius=25, delta_radius=2,
                 _, _, info_reg = round_regions(image,
                                                initial_radius=initial_radius,
                                                delta_radius=delta_radius,
-                                               toler_ecc=eccentricity,
-                                               count_border=count_border)
+                                               toler_ecc=eccentricity)
 
                 for info in info_reg:
                     line_file = (folder + ',' + str(idx+1) + ',' +
@@ -155,21 +148,41 @@ def clean_track_info(data, sigma_number=2, save_file=False):
     return data_clean
 
 
-def comparison_counting(manual, auto, with_border=False, tolerance=2.5):
+def clear_rd_border(image):
     """
+    """
+
+    aux = np.pad(image, ([1, 0], [1, 0]), mode='constant')
+    aux = clear_border(aux)
+    
+    return aux[:-2, 1:]
+
+
+def comp_wusem_counting(manual, auto, tolerance=2.5):
+    """Compares WUSEM automatic results with manual counting according
+    to a tolerance.
+
+    Parameters
+    ----------
+    manual : 
+    
+    auto : 
+    
+    tolerance : 
+
+    Returns
+    -------
+    step_cand : 
     """
 
     step_cand = []
 
     for i, j in product(range(5, 41, 5), range(2, 21, 2)):
-        if with_border:
-            aux_auto = auto.auto_withborder[(auto.initial_radius == i) &
-                                            (auto.delta_radius == j)].mean()
-        else:
-            aux_auto = auto.auto_noborder[(auto.initial_radius == i) &
-                                          (auto.delta_radius == j)].mean()
+        aux_auto = auto.auto_count[(auto.initial_radius == i) &
+                                   (auto.delta_radius == j)].mean()
         if 0 < (manual - aux_auto) < tolerance:
             step_cand.append([i, j])
+
     return step_cand
 
 
@@ -259,7 +272,6 @@ def joining_candidates(dict_cand):
 
 
 def parameters_samples(var):
-    """Helping function. Returns the statistics of a variable in a tuple."""
 
     var_param = [np.mean(var), np.std(var)]
 
@@ -267,8 +279,6 @@ def parameters_samples(var):
 
 
 def px_to_um(px=25):
-    """Helping function. Converts pixels to um according to the microscopy
-    magnification."""
 
     ang_coef = 0.41402227
     lin_coef = 0.05954835
@@ -279,9 +289,6 @@ def px_to_um(px=25):
 
 
 def px_to_um2(diam_a=20, diam_b=25):
-    """Helping function. Converts pixels to um^2 according to the microscopy
-    magnification."""
-
 
     ang_coef = 0.41402227
     lin_coef = 0.05954835
@@ -291,24 +298,21 @@ def px_to_um2(diam_a=20, diam_b=25):
     return um2
 
 
-def ratio_manauto(manual, auto, sample='kr', count_border=True,
-                  save_figure=False):
+def ratio_manauto(manual, auto, sample='dataset01', save_figure=False):
+    """
+    """
 
     all_ratio = []
 
-    if sample is 'dap':
+    if sample is 'dataset02':
         rows, cols = 1, 2
         plot_which = {'[0]': 'MAG1', '[1]': 'MAG2'}
 
         fig, ax = plt.subplots(nrows=rows, ncols=cols, figsize=(15, 8))
 
         for j in range(cols):
-            if count_border:
-                ratio = np.asarray(auto[plot_which[str([j])]].auto_withborder) / \
-                        np.asarray(manual[plot_which[str([j])]].manual_withborder)
-            else:
-                ratio = np.asarray(auto[plot_which[str([j])]].auto_noborder) / \
-                        np.asarray(manual[plot_which[str([j])]].manual_noborder)
+            ratio = np.asarray(auto[plot_which[str([j])]].auto_count) / \
+                    np.asarray(manual[plot_which[str([j])]].manual_count)
 
             (mu, sigma) = norm.fit(ratio)
             n, bins, patches = ax[j].hist(ratio, bins=6, normed=True,
@@ -333,15 +337,12 @@ def ratio_manauto(manual, auto, sample='kr', count_border=True,
         fig, ax = plt.subplots(nrows=rows, ncols=cols, figsize=(15, 20))
 
         for i, j in product(range(rows), range(cols)):
-            if count_border:
-                ratio = np.asarray(auto[plot_which[str([i, j])]].auto_withborder) / \
-                        np.asarray(manual[plot_which[str([i, j])]].manual_withborder)
-            else:
-                ratio = np.asarray(auto[plot_which[str([i, j])]].auto_noborder) / \
-                        np.asarray(manual[plot_which[str([i, j])]].manual_noborder)
+            ratio = np.asarray(auto[plot_which[str([i, j])]].auto_count) / \
+                    np.asarray(manual[plot_which[str([i, j])]].manual_count)
 
             (mu, sigma) = norm.fit(ratio)
-            n, bins, patches = ax[i, j].hist(ratio, normed=True, edgecolor='k')
+            n, bins, patches = ax[i, j].hist(ratio, normed=True,
+                                             edgecolor='k')
             fit = mlab.normpdf(bins, mu, sigma)
             ax[i, j].plot(bins, fit, 'k--', linewidth=2)
             ax[i, j].set_xlabel('$\mu$: ' + str(np.round(ratio.mean(),
@@ -354,15 +355,15 @@ def ratio_manauto(manual, auto, sample='kr', count_border=True,
                               ratio.std()])
 
     if save_figure:
-        plt.savefig('ratio_manauto' + FILE_EXT)
+        plt.savefig('ratio_manauto.eps')
     else:
         plt.show()
 
     return all_ratio
 
 
-def round_regions(image, initial_radius=25, delta_radius=2, toler_ecc=0.5,
-                  count_border=True):
+def round_regions(image, initial_radius=25, delta_radius=2,
+                  toler_ecc=0.5):
     '''
     '''
 
@@ -372,9 +373,6 @@ def round_regions(image, initial_radius=25, delta_radius=2, toler_ecc=0.5,
     thresh = threshold_isodata(image)
     img_bin = binary_fill_holes(image < thresh)
     img_bin = morphology.remove_small_objects(img_bin)
-
-    if not count_border:
-        img_bin = clear_border(img_bin)
 
     img_labels, _, _ = segmentation_wusem(img_bin,
                                           initial_radius=initial_radius,
@@ -481,59 +479,22 @@ def segmentation_wusem(image, str_el='disk', initial_radius=10,
     return img_labels, num_objects, last_step
 
 
-def separate_tracks_set1(minutes='4,5min', folder='K90_incid', img_number=1,
-                         best_args=(5, 4), count_border=True, save_tracks=False):
-    """Uses WUSEM to separate tracks in a folder from the first set.
+def separate_tracks_set1(minutes='4,5min', folder='K90_incid',
+                         img_number=1, best_args=(5, 4),
+                         save_tracks=False):
 
-    Parameters
-    ----------
-    minutes : string, optional
-        Amount of minutes the image was etched. Possible values are '4,5min' and
-        '8,5min'. Default is '4,5min'.
-    folder : string, optional
-        Folder where the image is. Possible values are 'K0_incid', 'K20_incid',
-        ..., up to 'K90_incid'. Default is 'K90_incid'.
-    img_number : int, optional
-        Number of the image in the folder. Default is 1.
-    best_args : tuple, optional
-        Initial and delta radius to process this image. Default is (5, 4).
-    count_border : bool, optional
-        Whether the algorithm will consider counting the border or not. Default
-        is True.
-    save_tracks : bool, optional
-        Whether the algorithm will save the processed tracks into the disk.
-        Default is False.
-
-    Returns
-    -------
-    None
-
-    References
-    ----------
-    .. [1] F.M. Schaller et al. "Tomographic analysis of jammed ellipsoid
-    packings", in: AIP Conference Proceedings, 2013, 1542: 377-380. DOI:
-    10.1063/1.4811946.
-
-    Examples
-    --------
-    >>> from skimage.data import binary_blobs
-    >>> image = binary_blobs(length=512, seed=0)
-    >>> img_labels, num_objects, _ = segmentation_wusem(image,
-                                                        str_el='disk',
-                                                        initial_radius=10,
-                                                        delta_radius=3)
-    """
-
-    img_name = 'orig_figures/dataset_01/Kr-78_' + minutes + '/' + folder + '/' + \
-               folder + minutes + '_' + str(img_number) + '.bmp'
+    img_name = 'orig_figures/dataset_01/Kr-78_' + minutes + '/' + \
+               folder + '/' + folder + minutes + '_' + \
+               str(img_number) + '.bmp'
 
     image = imread(img_name, as_grey=True)
-    labels, objects, _ = round_regions(image, initial_radius=best_args[0],
+    labels, objects, _ = round_regions(image,
+                                       initial_radius=best_args[0],
                                        delta_radius=best_args[1],
-                                       toler_ecc=0.3, count_border=True)
+                                       toler_ecc=0.3)
 
-    data_name = 'auto_count/roundclean_Kr-78_' + minutes + '_' + \
-                str(count_border)[0] + '.txt'
+    data_name = 'auto_count/roundclean_dataset01_Kr-78_' + minutes + \
+                '.txt'
     info_clean = pd.read_csv(data_name, index_col=0)
 
     track_info = info_clean[(info_clean['folder'] == folder) &
@@ -549,27 +510,27 @@ def separate_tracks_set1(minutes='4,5min', folder='K90_incid', img_number=1,
 
             if save_tracks:
                 track_name = folder + minutes + '_' + str(img_number) + \
-                             '_track_' + str(prop.label) + FILE_EXT
-                plt.savefig(filename=track_name, bbox_inches='tight')
+                             '_track_' + str(prop.label) + '.eps'
+                plt.savefig(fname=track_name, bbox_inches='tight')
 
     return None
 
 
 def separate_tracks_set2(img_number=1, best_args=(10, 8),
-                         count_border=True, save_tracks=False):
+                         save_tracks=False):
 
     info_name = pd.read_csv('orig_figures/dataset_02/software_numbering.txt')
     img_name = info_name.loc[info_name['image_number'] == img_number,
                              'corresp_image'].iloc[0]
 
-    image = imread('orig_figures/dataset_02/' + img_name + FILE_EXT,
+    image = imread('orig_figures/dataset_02/' + img_name + '.jpg',
                    as_grey=True)
-    labels, objects, _ = round_regions(image, initial_radius=best_args[0],
+    labels, objects, _ = round_regions(image,
+                                       initial_radius=best,
                                        delta_radius=best_args[1],
-                                       toler_ecc=0.3, count_border=True)
+                                       toler_ecc=0.3)
 
-    data_name = 'auto_count/roundclean_dataset02_' + str(count_border)[0] + \
-                '.txt'
+    data_name = 'auto_count/roundclean_dataset02.txt'
 
     info_clean = pd.read_csv(data_name, index_col=0)
     track_info = info_clean[info_clean['image'] == img_number]
@@ -583,14 +544,15 @@ def separate_tracks_set2(img_number=1, best_args=(10, 8),
             ax.contourf(prop.intensity_image, cmap='magma')
 
             if save_tracks:
-                track_name = img_name + '_track_' + str(prop.label) + FILE_EXT
+                track_name = img_name + '_track_' + str(prop.label) + '.eps'
                 plt.savefig(filename=track_name, bbox_inches='tight')
 
     return None
 
 
 def sorting_candidates(list_candidates):
-    """Helping function. Sorts candidate numbers within a list."""
+    '''
+    '''
 
     aux, counted_list = [], []
 
@@ -604,7 +566,6 @@ def sorting_candidates(list_candidates):
 
 
 def track_properties(properties, save_images=False):
-    """Helping function. Writes track properties to a file."""
 
     file = open('track_props.txt', 'w')
     file.write('object,minor_axis,major_axis,mean_gray\n')
@@ -623,7 +584,7 @@ def track_properties(properties, save_images=False):
         file.write(line_file)
 
         if save_images:
-            img_filename = 'track_' + str(prop.label) + 
+            img_filename = 'track_' + str(prop.label) + '.eps'
             plt.savefig(filename=img_filename, bbox_inches='tight')
         else:
             plt.show()

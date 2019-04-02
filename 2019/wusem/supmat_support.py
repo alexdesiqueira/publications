@@ -28,20 +28,52 @@ Supplementary Material'. If not, see <http://www.gnu.org/licenses/>.
 from itertools import product
 from matplotlib.ticker import MultipleLocator
 from scipy.ndimage.morphology import binary_fill_holes
+from scipy.stats import norm
 from skimage.color import rgb2gray
 from skimage.filters import threshold_isodata
 from skimage.io import ImageCollection, imread, imread_collection
-from skimage.segmentation import clear_border
 
 import desiqueira2017 as ds  # functions presented in this study
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
+import re
 import statistics as stats
 
 
-def generating_results_dataset1(base_path='.', save_images=False):
+def alphanum_key(string):
+    return [try_integer(char) for char in re.split('([0-9]+)', string)]
+
+
+def comp_hwater_counting(manual, hwater, tolerance=2.5): 
+    """Compares H-watershed automatic results with manual counting
+    according to a tolerance.
+
+    Parameters
+    ----------
+    manual : 
+    
+    auto : 
+    
+    tolerance : 
+
+    Returns
+    -------
+    step_cand : 
+    """
+
+    step_cand = [] 
+
+    for i in range(1, 61): 
+        aux_hwater = hwater.auto_count[hwater.seed == i].mean() 
+        if 0 < (manual - aux_hwater) < tolerance: 
+            step_cand.append([i]) 
+
+    return step_cand
+
+
+def generate_results_dataset01(path='./', save_images=False):
     """Process every image on dataset 1 using WUSEM, initial_radius will
     vary from 5 to 40, step 5, and delta_radius from 2 to 20, step 2.
     Please keep in mind that this command will take **several hours** to
@@ -49,7 +81,7 @@ def generating_results_dataset1(base_path='.', save_images=False):
 
     Parameters
     ----------
-    base_path : string
+    path : string
         The path where the folders orig_figures and res_figures are.
     save_images : bool, optional (default : False)
         If True, the resulting images will be written to the disk. Else,
@@ -59,58 +91,65 @@ def generating_results_dataset1(base_path='.', save_images=False):
     -------
     None
 
-    Examples
-    --------
-    >>> generating_results_dataset1(base_path='.', save_images=True)
+    Example
+    -------
+    >>> generate_results_dataset01(path='./', save_images=True)
     """
 
     # establishing the variables to be used.
     frad_num = range(5, 41, 5)
     delrad_num = range(2, 21, 2)
-    path_num = [0, 20, 30, 40, 50, 60, 70, 80, 90]
     minutes = ['4,5min', '8,5min']
 
     for m in minutes:
-        orig_path = 'orig_figures/dataset_01/Kr-78_' + m + '/'
-        save_path = 'res_figures/dataset_01/Kr-78_' + m + '/'
+        orig_path = path + 'orig_figures/dataset_01/Kr-78_' + m + '/'
+        save_path = path + 'res_figures/dataset_01/Kr-78_' + m + '/'
+
+        try:
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
+        except:
+            raise
 
         # preparing the file to receive data.
-        file = open(base_path + 'autoincid_Kr-78_' + m + '_incid.txt',
+        file = open((path + 'auto_count/'
+                    'auto_dataset01_Kr-78_' + m + '_incid.txt'),
                     'w')
         file.write(('folder,image,initial_radius,delta_radius,'
-                    'auto_withborder,auto_noborder\n'))
+                    'auto_count\n'))
 
-        os.chdir(base_path)
+        # getting subfolders and sorting them alphabetically.
+        subfolders = sort_nicely(next(os.walk(orig_path))[1])
 
-        for num in path_num:
-            folder = 'K' + str(num) + '_incid'
-            os.chdir(base_path + orig_path + folder)
-            image_set = imread_collection(load_pattern='*.bmp')
+        for folder in subfolders:
+            try:
+                if not os.path.exists(save_path + folder):
+                    os.makedirs(save_path + folder)
+            except:
+                raise
+            
+            image_set = imread_collection(load_pattern=(orig_path +
+                                                        folder +
+                                                        '/*.bmp'))
 
             for idx, image in enumerate(image_set):
                 for fr, dr in product(frad_num, delrad_num):
-                    num_aux = []
-                    # counting with border: True, without border: False.
-                    for count in [True, False]:
-                        num_aux.append(wusem_results(image,
-                                                     initial_radius=fr,
-                                                     delta_radius=dr,
-                                                     count_border=count,
-                                                     save_images=save_images))
-                        if save_images:
-                            img_filename = base_path + save_path + \
-                                           folder + '/' + folder + \
-                                           '_' + str(idx+1) + '_fr' + \
-                                           str(fr) + '_dr' + str(dr) + \
-                                           '_' + str(count)[0] + '.png'
-                            os.rename(src='resulting_image.png',
-                                      dst=img_filename)
+                    count = wusem_results(image,
+                                          initial_radius=fr,
+                                          delta_radius=dr,
+                                          save_images=save_images)
+                    if save_images:
+                        img_filename = save_path + folder + '/' + \
+                                       folder + m + '_' + str(idx+1) + \
+                                       '_fr' + str(fr) + '_dr' + \
+                                       str(dr) + '.png'
+                        os.rename(src='resulting_image.png',
+                                  dst=img_filename)
 
                     # saving results in a file.
                     line_file = folder + ',' + str(idx+1) + ',' + \
-                        str(fr) + ',' + str(dr) + ',' + \
-                        str(num_aux[0]) + ',' + \
-                        str(num_aux[1]) + '\n'
+                                str(fr) + ',' + str(dr) + ',' + \
+                                str(count) + '\n'
                     file.write(line_file)
 
         file.close()
@@ -118,14 +157,14 @@ def generating_results_dataset1(base_path='.', save_images=False):
     return None
 
 
-def generating_results_dataset2(base_path='.', save_images=False):
+def generate_results_dataset02(path='./', save_images=False):
     """Process every image on dataset 2 using WUSEM, initial_radius will
     vary from 5 to 40, step 5, and delta_radius from 2 to 20, step 2.
     Please keep in mind that this command will take a while to finish.
 
     Parameters
     ----------
-    base_path : string
+    path : string
         The path where the folders orig_figures and res_figures are.
     save_images : bool, optional (default : False)
         If True, the resulting images will be written to the disk. Else,
@@ -135,51 +174,62 @@ def generating_results_dataset2(base_path='.', save_images=False):
     -------
     None
 
-    Examples
-    --------
-    >>> generating_results_dataset2(base_path='.', save_images=True)
+    Example
+    -------
+    >>> generate_results_dataset02(path='./', save_images=True)
     """
 
     # establishing the variables to be used.
-    fst_num = range(5, 41, 5)
-    delta_radius_num = range(2, 21, 2)
+    frad_num = range(5, 41, 5)
+    delrad_num = range(2, 21, 2)
 
-    orig_path = 'orig_figures/dataset_02/'
-    save_path = 'res_figures/dataset_02/'
+    orig_path = path + 'orig_figures/dataset_02/'
+    save_path = path + 'res_figures/dataset_02/'
+
+    try:
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+    except:
+        raise
 
     # preparing the file to receive data.
-    file = open(base_path + 'automatic_DAP.txt', 'w')
-    file.write(('image,initial_radius,delta_radius,auto_withborder,'
-                'auto_noborder\n'))
+    file = open(path + 'auto_count/auto_dataset02.txt', 'w')
+    file.write('image,initial_radius,delta_radius,auto_count\n')
 
-    os.chdir(base_path + orig_path)
-    image_set = ImageCollection(load_pattern='*.jpg',
+    image_set = ImageCollection(load_pattern=(orig_path + '/*.jpg'),
                                 load_func=imread_convert)
     for image in image_set:
         image = rgb2gray(image)
 
     for idx, image in enumerate(image_set):
-        for fs, st in product(fst_num, delta_radius_num):
-            num_aux = []
-            for count in [True, False]:
-                # counting with border: True, without border: False.
-                num_aux.append(show_schaller_results(image,
-                                                     initial_radius=fs,
-                                                     delta_radius=st,
-                                                     count_border=count,
-                                                     save_images=save_images))
-                if save_images:
-                    img_filename = base_path + save_path + 'img' + \
-                                   str(idx+1) + '_fs' + str(fs) + \
-                                   '_st' + str(st) + '_' + \
-                                   str(count)[0] + '.png'
-                    os.rename(src='resulting_image.png',
-                              dst=img_filename)
+        for fr, dr in product(frad_num, delrad_num):
+            count = wusem_results(image,
+                                  initial_radius=fr,
+                                  delta_radius=dr,
+                                  save_images=save_images)
+            if save_images:
+                if 0 < idx+1 < 10:
+                    try:
+                        if not os.path.exists(save_path + 'MAG1'):
+                            os.makedirs(save_path + 'MAG1')
+                        if not os.path.exists(save_path + 'MAG2'):
+                            os.makedirs(save_path + 'MAG2')
+                    except:
+                        raise
+                    img_filename = save_path + 'MAG1/img' + \
+                                   str(idx+1) + '_fr' + \
+                                   str(fr) + '_dr' + str(dr) + '.png'
+                else:
+                    img_filename = save_path + 'MAG2/img' + \
+                                   str(idx+1) + '_fr' + \
+                                   str(fr) + '_dr' + str(dr) + '.png'
 
-                # saving results in a file.
-            line_file = str(idx+1) + ',' + str(fs) + ',' + str(st) + \
-                ',' + str(num_aux[0]) + ',' + str(num_aux[1]) + \
-                '\n'
+                os.rename(src='resulting_image.png',
+                          dst=img_filename)
+
+            # saving results in a file.
+            line_file = str(idx+1) + ',' + str(fr) + ',' + str(dr) + \
+                        ',' + str(count) + '\n'
             file.write(line_file)
 
     file.close()
@@ -246,17 +296,19 @@ def plot_auxiliar_dataset1(var_manual, var_auto, auto_color='b',
     rows = len(var_manual)
     x_trk = np.arange(0, rows)
     # manual counting.
-    ax.bar(left=x_trk-width, height=var_manual, width=width,
+    ax.bar(x=x_trk-width, height=var_manual, width=width,
            color='0.60')
     # automatic counting.
-    ax.bar(left=x_trk, height=var_auto, width=width, color=auto_color)
+    ax.bar(x=x_trk, height=var_auto, width=width, color=auto_color)
 
     ax.axis([-1, rows, 0, 45])
     ax.set_xticks([0, 4, 9, 14, 19])
     ax.set_xticklabels(('1', '5', '10', '15', '20'))
     ax.yaxis.set_major_locator(MultipleLocator(10))
 
-    x_label = ('Image number\n\nManual:\n* Sample st dev: ' +
+    x_label = ('Image number\n\nManual:\n* Mean: ' +
+               str(np.round(np.mean(var_manual), decimals=2)) +
+               '\n* Sample st dev: ' +
                str(np.round(stats.stdev(var_manual), decimals=2)) +
                '\n* Pop st dev: ' +
                str(np.round(np.std(var_manual), decimals=2)) +
@@ -267,7 +319,9 @@ def plot_auxiliar_dataset1(var_manual, var_auto, auto_color='b',
                str(np.round(stats.stdev(var_manual) /
                             np.sqrt(np.mean(var_manual)),
                             decimals=2)) +
-               '\n\nAutomatic:\n* Sample st dev: ' +
+               '\n\nAutomatic:\n* Mean: ' +
+               str(np.round(np.mean(var_auto), decimals=2)) +
+               '\n* Sample st dev: ' +
                str(np.round(stats.stdev(var_auto), decimals=2)) +
                '\n* Pop st dev: ' +
                str(np.round(np.std(var_auto), decimals=2)) +
@@ -299,17 +353,19 @@ def plot_auxiliar_dataset2(var_manual, var_auto, auto_color='b',
     rows = len(var_manual)
     x_trk = np.arange(0, rows)
     # manual counting.
-    ax.bar(left=x_trk-width, height=var_manual, width=width,
+    ax.bar(x=x_trk-width, height=var_manual, width=width,
            color='0.60')
     # automatic counting.
-    ax.bar(left=x_trk, height=var_auto, width=width, color=auto_color)
+    ax.bar(x=x_trk, height=var_auto, width=width, color=auto_color)
 
     ax.set_xticks(x_trk - width / 2)
     ax.axis([-1, rows, 0, 100])
     ax.set_xticklabels(('1', '2', '3', '4', '5', '6', '7', '8', '9'))
     ax.yaxis.set_major_locator(MultipleLocator(10))
 
-    x_label = ('Image number\n\nManual:\n* Sample st dev: ' +
+    x_label = ('Image number\n\nManual:\n* Mean: ' +
+               str(np.round(np.mean(var_manual), decimals=2)) +
+               '\n* Sample st dev: ' +
                str(np.round(stats.stdev(var_manual), decimals=2)) +
                '\n* Pop st dev: ' +
                str(np.round(np.std(var_manual), decimals=2)) +
@@ -320,7 +376,9 @@ def plot_auxiliar_dataset2(var_manual, var_auto, auto_color='b',
                str(np.round(stats.stdev(var_manual) /
                             np.sqrt(np.mean(var_manual)),
                             decimals=2)) +
-               '\n\nAutomatic:\n* Sample st dev: ' +
+               '\n\nAutomatic:\n* Mean: ' +
+               str(np.round(np.mean(var_auto), decimals=2)) +
+               '\n* Sample st dev: ' +
                str(np.round(stats.stdev(var_auto), decimals=2)) +
                '\n* Pop st dev: ' +
                str(np.round(np.std(var_auto), decimals=2)) +
@@ -363,7 +421,7 @@ def plot_linreg_dataset1(var_manual, var_auto, color='red', ax=None):
 
     x_label = ('Manual counting\n\nLine parameters:\n* Slope: ' +
                str(np.round(fit[0], decimals=2)) +
-               '\n* Y-Intercept:\n\n' +
+               '\n* Y-Intercept: ' +
                str(np.round(fit[1], decimals=2)) +
                '\n\nStats:\n* Correlation: ' +
                str(np.round(corr_coef, decimals=2)) +
@@ -409,7 +467,7 @@ def plot_linreg_dataset2(var_manual, var_auto, color='red', ax=None):
 
     x_label = ('Manual counting\n\nLine parameters:\n* Slope: ' +
                str(np.round(fit[0], decimals=2)) +
-               '\n* Y-Intercept:\n\n' +
+               '\n* Y-Intercept: ' +
                str(np.round(fit[1], decimals=2)) +
                '\n\nStats:\n* Correlation: ' +
                str(np.round(corr_coef, decimals=2)) +
@@ -425,8 +483,80 @@ def plot_linreg_dataset2(var_manual, var_auto, color='red', ax=None):
     return ax
 
 
+def ratio_manhwater(manual, auto, sample='dataset01'):
+    """
+    """
+
+    all_ratio = []
+
+    if sample is 'dataset02':
+        rows, cols = 1, 2
+        plot_which = {'[0]': 'MAG1', '[1]': 'MAG2'}
+
+        fig, ax = plt.subplots(nrows=rows, ncols=cols, figsize=(15, 8))
+
+        for j in range(cols):
+            ratio = np.asarray(auto[plot_which[str([j])]].hwater_count) / \
+                    np.asarray(manual[plot_which[str([j])]].manual_count)
+
+            (mu, sigma) = norm.fit(ratio)
+            n, bins, patches = ax[j].hist(ratio, bins=6, normed=True,
+                                          edgecolor='k')
+            fit = mlab.normpdf(bins, mu, sigma)
+            ax[j].plot(bins, fit, 'k--', linewidth=2)
+            ax[j].set_xlabel('$\mu$: ' + str(np.round(ratio.mean(),
+                                                      decimals=4)) +
+                             ', $\sigma$: ' + str(np.round(ratio.std(),
+                                                           decimals=4)))
+
+            all_ratio.append([plot_which[str([j])],
+                              ratio.mean(),
+                              ratio.std()])
+
+    else:
+        rows, cols = 3, 3
+        plot_which = {'[0, 0]': '0', '[0, 1]': '20', '[0, 2]': '30',
+                      '[1, 0]': '40', '[1, 1]': '50', '[1, 2]': '60',
+                      '[2, 0]': '70', '[2, 1]': '80', '[2, 2]': '90'}
+
+        fig, ax = plt.subplots(nrows=rows, ncols=cols, figsize=(15, 20))
+
+        for i, j in product(range(rows), range(cols)):
+            ratio = np.asarray(auto[plot_which[str([i, j])]].hwater_count) / \
+                    np.asarray(manual[plot_which[str([i, j])]].manual_count)
+
+            (mu, sigma) = norm.fit(ratio)
+            n, bins, patches = ax[i, j].hist(ratio, normed=True,
+                                             edgecolor='k')
+            fit = mlab.normpdf(bins, mu, sigma)
+            ax[i, j].plot(bins, fit, 'k--', linewidth=2)
+            ax[i, j].set_xlabel('$\mu$: ' + str(np.round(ratio.mean(),
+                                                         decimals=4)) +
+                                ', $\sigma$: ' + str(np.round(ratio.std(),
+                                                              decimals=4)))
+
+            all_ratio.append([plot_which[str([i, j])],
+                              ratio.mean(),
+                              ratio.std()])
+
+    plt.show()
+
+    return all_ratio
+
+
+def sort_nicely(list):
+    return sorted(list, key=alphanum_key)
+
+
+def try_integer(string):
+    try:
+        return int(string)
+    except ValueError:
+        return string
+
+
 def wusem_results(image, initial_radius=10, delta_radius=5,
-                  count_border=True, save_images=False):
+                  save_images=False):
     """Support function. Process image according to initial_radius and
     delta_radius, and presents the results of ISODATA threshold, WUSEM
     algorithm, and enumerate_objects. Returns the nu
@@ -439,9 +569,6 @@ def wusem_results(image, initial_radius=10, delta_radius=5,
         Radius of the first structuring element, in pixels.
     delta_radius : float, optional (default : 5)
         Size of the radius to be used on each iteration, in pixels.
-    count_border : bool, optional(default : True)
-        Chooses whether to use the scenario 'considering track borders'
-        (True) or 'ignoring track borders' (False).
     save_images : bool, optional (default : False)
         If True, the resulting images will be written to the disk. Else,
         they will only be presented.
@@ -454,13 +581,12 @@ def wusem_results(image, initial_radius=10, delta_radius=5,
 
     thresh = threshold_isodata(image)
     img_bin = binary_fill_holes(image < thresh)
-
-    if not count_border:
-        img_bin = clear_border(img_bin)
-
     img_labels, num_objects, _ = ds.segmentation_wusem(img_bin,
                                                        initial_radius=initial_radius,
                                                        delta_radius=delta_radius)
+
+
+    img_labels = ds.clear_rd_border(img_labels)
     img_number = ds.enumerate_objects(image, img_labels, font_size=25)
 
     fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(16, 12))

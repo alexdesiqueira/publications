@@ -1,0 +1,21 @@
+HOW THE TEST IMAGES WERE PROCESSED USING CLASSIC AND H-WATERSHEDS (ON
+IMAGEJ/FIJI):
+
+* CLASSIC WATERSHED [1]
+
+1. Process > Binary > Make Binary
+2. Plugins > MorphoLibJ [2] > Kill Borders [3]
+3. Process > Binary > Fill Holes
+4. Process > Binary > Watershed
+5. Analyze > Analyze Particles...
+ . Size (pixel^2): 0-Infinity
+ . Circularity: 0.00-1.00
+ . Show: Outlines
+ . Boxes to check: Display results; Clear results
+
+[1]
+[2] Available at <https://imagej.net/MorphoLibJ>.
+[3] Kill Borders was used in a way that only the lower and right borders
+were discarded, according to the “lower right corner” method (Russ, 2011).
+
+* H-WATERSHED
