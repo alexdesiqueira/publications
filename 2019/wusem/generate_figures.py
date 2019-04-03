@@ -79,8 +79,8 @@ def figure_3():
 
     image_animation = []
 
-    img_orig = imread(('orig_figures/dataset_01/Kr-78_4,5min/K90_incid/'
-                       'K90_incid4,5min_3.bmp'), as_grey=True)
+    img_orig = imread(('figures/orig_figures/dataset_01/Kr-78_4,5min/'
+                       'K90_incid/K90_incid4,5min_3.bmp'), as_grey=True)
 
     fig = plt.figure(figsize=(15, 10))
 
@@ -88,9 +88,9 @@ def figure_3():
     curr_frame = plt.imshow(img_orig, cmap='gray')
     for i in range(10):
         if i+1 < 10:
-            fname = 'fig_3-frames/frame0' + str(i+1) + '.eps'
+            fname = 'misc/fig_3-frames/frame0' + str(i+1) + '.eps'
         else:
-            fname = 'fig_3-frames/frame' + str(i+1) + '.eps'
+            fname = 'misc/fig_3-frames/frame' + str(i+1) + '.eps'
         plt.savefig(fname=fname, bbox_inches='tight')
 
     # 2nd image: binary image.
@@ -98,7 +98,7 @@ def figure_3():
     image = binary_fill_holes(aux)
     curr_frame = plt.imshow(image, cmap='gray', animated=True)
     for i in range(10):
-        fname = 'fig_3-frames/frame' + str(i+11) + '.eps'
+        fname = 'misc/fig_3-frames/frame' + str(i+11) + '.eps'
         plt.savefig(fname=fname, bbox_inches='tight')
 
     rows, cols = image.shape
@@ -115,7 +115,7 @@ def figure_3():
         erod_aux = binary_erosion(image, selem=disk(curr_radius))
         curr_frame = plt.imshow(erod_aux, cmap='gray', animated=True)
 
-        fname = 'fig_3-frames/frame' + str(counter+21) + '.eps'
+        fname = 'misc/fig_3-frames/frame' + str(counter+21) + '.eps'
         plt.savefig(fname=fname, bbox_inches='tight')
 
         if erod_aux.min() == erod_aux.max():
@@ -153,7 +153,7 @@ def figure_3():
     curr_frame = plt.imshow(img_labels, cmap='nipy_spectral',
                             animated=True)
     for i in range(10):
-        fname = 'fig_3-frames/frame' + str(i+57) + '.eps'
+        fname = 'misc/fig_3-frames/frame' + str(i+57) + '.eps'
         plt.savefig(fname=fname, bbox_inches='tight')
 
     # Figure 3: saving the video thumbnail.
@@ -167,11 +167,11 @@ def figure_3():
 
     curr_frame = plt.imshow(img_number, animated=True)
     for i in range(10):
-        fname = 'fig_3-frames/frame' + str(i+67) + '.eps'
+        fname = 'misc/fig_3-frames/frame' + str(i+67) + '.eps'
         plt.savefig(fname=fname, bbox_inches='tight')
 
     # Figure 3.
-    os.system('convert -delay 20 fig_3-frames/frame*.eps Fig_3-media.mp4')
+    os.system('convert -delay 20 misc/fig_3-frames/frame*.eps Fig_3-media.mp4')
 
     return None
 
@@ -182,8 +182,8 @@ def figure_6():
     (threshold = 128) and region filling.
     """
 
-    image = imread(('orig_figures/dataset_01/Kr-78_4,5min/K90_incid/'
-                    'K90_incid4,5min_3.bmp'), as_grey=True)
+    image = imread(('figures/orig_figures/dataset_01/Kr-78_4,5min/'
+                    'K90_incid/K90_incid4,5min_3.bmp'), as_grey=True)
 
     img_bin = binary_fill_holes(image < threshold_isodata(image))
 
@@ -208,8 +208,8 @@ def figure_7():
     initial_radius, delta_radius, counter = (10, 4, 1)
     subfig = list(ascii_lowercase[:7])
 
-    image = imread(('orig_figures/dataset_01/Kr-78_4,5min/K90_incid/'
-                    'K90_incid4,5min_3.bmp'), as_grey=True)
+    image = imread(('figures/orig_figures/dataset_01/Kr-78_4,5min/'
+                    'K90_incid/K90_incid4,5min_3.bmp'), as_grey=True)
     thresh = threshold_isodata(image)
     img_bin = binary_fill_holes(image < thresh)
 
@@ -267,8 +267,8 @@ def figure_8():
     (b) gray.
     """
 
-    image = imread(('orig_figures/dataset_01/Kr-78_4,5min/K90_incid/'
-                    'K90_incid4,5min_3.bmp'), as_grey=True)
+    image = imread(('figures/orig_figures/dataset_01/Kr-78_4,5min/'
+                    'K90_incid/K90_incid4,5min_3.bmp'), as_grey=True)
 
     img_bin = binary_fill_holes(image < threshold_isodata(image))
 
@@ -308,21 +308,23 @@ def figure_9():
     plot_where = {'0': 10, '20': 20, '30': 30, '40': 40, '50': 50,
                   '60': 60, '70': 70, '80': 80, '90': 90}
     ticks = [10, 20, 30, 40, 50, 60, 70, 80, 90]
-    man_color, auto_color = ('#386cb0', '#fdc086')
+    man_color, wusem_color = ('#386cb0', '#fdc086')
 
     # defining mean tolerance used in the paper.
     tol = 2
 
     # Figure 9 (a).
-    man_count = pd.read_excel('manual_count/manual_dataset01_Kr-78_4,5min_incid.xls')
-    auto_count = pd.read_csv('auto_count/auto_dataset01_Kr-78_4,5min_incid.txt')
-    manual, auto, mean_man = [{} for _ in range(3)]
+    man_count = pd.read_excel(('counting/manual_count/'
+                               'manual_dataset01_Kr-78_4,5min_incid.xls'))
+    wusem_count = pd.read_csv(('counting/wusem_count/'
+                               'wusem_dataset01_Kr-78_4,5min_incid.txt'))
+    manual, wusem, mean_man = [{} for _ in range(3)]
 
     for idx, folder in enumerate(folders):
         manual[samples[idx]] = man_count[man_count['folder'] == folder]
-        auto[samples[idx]] = auto_count[auto_count['folder'] == folder]
+        wusem[samples[idx]] = wusem_count[wusem_count['folder'] == folder]
 
-    # calculating the means for manual counting, and obtaining the
+    # calculating the means for manual counting,and obtaining
     # best candidates for initial_radius and delta_radius.
     for key, val in manual.items():
         mean_man[key] = val.manual_count.mean()
@@ -338,13 +340,13 @@ def figure_9():
                     xy=(plot_where[key]+1.2, val), color=man_color)
 
     for i, j in product(range(5, 41, 5), range(2, 21, 2)):
-        for key, val in auto.items():
+        for key, val in wusem.items():
             aux = val.auto_count[(val.initial_radius == i) &
                                  (val.delta_radius == j)].mean()
             if 0 < (mean_man[key] - aux) < tol:
                 ax.scatter(plot_where[key],
                            aux,
-                           color=auto_color,
+                           color=wusem_color,
                            edgecolor='k')
             else:
                 ax.scatter(plot_where[key],
@@ -363,13 +365,15 @@ def figure_9():
     plt.savefig('Fig_9a.eps', bbox_inches='tight')
 
     # Figure 9 (b).
-    man_count = pd.read_excel('manual_count/manual_dataset01_Kr-78_8,5min_incid.xls')
-    auto_count = pd.read_csv('auto_count/auto_dataset01_Kr-78_8,5min_incid.txt')
-    manual, auto, mean_man = [{} for _ in range(3)]
+    man_count = pd.read_excel(('counting/manual_count/'
+                               'manual_dataset01_Kr-78_8,5min_incid.xls'))
+    wusem_count = pd.read_csv(('counting/wusem_count/'
+                               'wusem_dataset01_Kr-78_8,5min_incid.txt'))
+    manual, wusem, mean_man = [{} for _ in range(3)]
 
     for idx, folder in enumerate(folders):
         manual[samples[idx]] = man_count[man_count['folder'] == folder]
-        auto[samples[idx]] = auto_count[auto_count['folder'] == folder]
+        wusem[samples[idx]] = wusem_count[wusem_count['folder'] == folder]
 
     for key, val in manual.items():
         mean_man[key] = val.manual_count.mean()
@@ -385,13 +389,13 @@ def figure_9():
                     xy=(plot_where[key]+1.2, val), color=man_color)
 
     for i, j in product(range(5, 41, 5), range(2, 21, 2)):
-        for key, val in auto.items():
+        for key, val in wusem.items():
             aux = val.auto_count[(val.initial_radius == i) &
                                  (val.delta_radius == j)].mean()
             if 0 < (mean_man[key] - aux) < tol:
                 ax.scatter(plot_where[key],
                            aux,
-                           color=auto_color,
+                           color=wusem_color,
                            edgecolor='k')
             else:
                 ax.scatter(plot_where[key],
@@ -413,196 +417,6 @@ def figure_9():
 
 
 def figure_10():
-    """
-    Figure 10. Comparison between manual and automatic counting for (a,
-    b) 4.5 min etching samples and (c, d) 8.5 min etching samples. (a,
-    c) white: manual counting. Gray: flooding watershed counting. Red
-    line: distribution median. White signal: distribution mean. (b, d)
-    dashed: 1:1 line. Red line: regression for the WUSEM counting data.
-    Black line: regression for the flooding watershed counting data.
-
-    Notes
-    -----
-
-    1. Based on the example available at:
-    http://matplotlib.org/examples/pylab_examples/boxplot_demo2.html
-    2. Colors extracted from the 'viridis' colormap. Code used:
-
-    >>> from pylab import *
-    >>> cmap = cm.get_cmap('viridis', 10)
-    >>> for i in range(cmap.N):
-    ...    rgb = cmap(i)[:3]
-    ...    print(matplotlib.colors.rgb2hex(rgb))
-
-    Code based on the example given in the best answer at:
-    https://stackoverflow.com/questions/3016283/\
-    create-a-color-generator-from-given-colormap-in-matplotlib
-    """
-
-    # defining some helping variables.
-    samples = ['0', '20', '30', '40', '50', '60', '70', '80', '90']
-    folders = ['K0_incid', 'K20_incid', 'K30_incid', 'K40_incid',
-               'K50_incid', 'K60_incid', 'K70_incid', 'K80_incid',
-               'K90_incid']
-
-    # manual, watershed and auto: 8 spaces each
-    pos = list(range(1, 28))
-
-    manual_color = '1'
-    auto_colors = {'0': '#440154', '20': '#482878', '30': '#3e4989',
-                   '40': '#31688e', '50': '#26828e', '60': '#35b779',
-                   '70': '#6ece58', '80': '#b5de2b', '90': '#fde725'}
-    water_color = '0.5'
-
-    autofit_color = '#cb181d'
-    waterfit_color = 'k'
-
-    box_colors = []
-    for _, color in auto_colors.items():
-        box_colors.append(manual_color)
-        box_colors.append(water_color)
-        box_colors.append(color)
-
-    flier_props = dict(marker='P', markerfacecolor='#386cb0',
-                       markeredgecolor='#386cb0', linestyle='none')
-
-    x_ticks = np.arange(2, 27, 3)
-    x_labels = ['K0', 'K20', 'K30', 'K40', 'K50', 'K60', 'K70',
-                'K80', 'K90']
-
-    candbest_45 = (10, 20)
-    candbest_85 = (10, 14)
-
-    # Figure 10 (a).
-    man_count = pd.read_excel('manual_count/manual_dataset01_Kr-78_4,5min_incid.xls')
-    water_count = pd.read_csv('water_count/water_dataset01_Kr-78_4,5min_incid.txt')
-    auto_count = pd.read_csv('auto_count/auto_dataset01_Kr-78_4,5min_incid.txt')
-    manual, water, auto, auto_best = [{} for _ in range(4)]
-
-    for idx, folder in enumerate(folders):
-        manual[samples[idx]] = man_count[man_count['folder'] == folder]
-        water[samples[idx]] = water_count[comp_count['folder'] == folder]
-        auto[samples[idx]] = auto_count[auto_count['folder'] == folder]
-
-    for key, val in auto.items():
-        # best candidate.
-        auto_best[key] = val[(val['initial_radius'] == candbest_45[0]) &
-                             (val['delta_radius'] == candbest_45[1])]
-
-    man_vs_auto = []
-
-    for key, val in manual.items():
-        # data: manual, comparison, auto
-        man_vs_auto.append(np.asarray(val.manual_count))
-        man_vs_auto.append(np.asarray(water[key].comp_count))
-        man_vs_auto.append(np.asarray(auto_best[key].auto_count))
-
-    fig, ax = plt.subplots(figsize=(16, 10))
-    box_plot = ax.boxplot(man_vs_auto, flierprops=flier_props,
-                          positions=pos)
-
-    ax.set_xticks(x_ticks)
-    ax.set_xticklabels(x_labels)
-
-    num_boxes = len(man_vs_auto)
-    medians = list(range(num_boxes))
-
-    for i in range(num_boxes):
-        box = box_plot['boxes'][i]
-        boxX, boxY = [[] for _ in range(2)]
-        for j in range(5):
-            boxX.append(box.get_xdata()[j])
-            boxY.append(box.get_ydata()[j])
-        box_coords = list(zip(boxX, boxY))
-        box_polygon = mpatches.Polygon(box_coords,
-                                       facecolor=box_colors[i])
-        ax.add_patch(box_polygon)
-
-        med = box_plot['medians'][i]
-        medianX, medianY = [[] for _ in range(2)]
-        for j in range(2):
-            medianX.append(med.get_xdata()[j])
-            medianY.append(med.get_ydata()[j])
-            plt.plot(medianX, medianY, 'k')
-            medians[i] = medianY[0]
-        # overplot the sample averages with horizontal alignment
-        # in the center of each box.
-        plt.plot([np.average(med.get_xdata())],
-                 [np.average(man_vs_auto[i])],
-                 color='w', marker='P', markeredgecolor='k')
-
-    ax.set_xlabel('Sample number')
-    ax.set_ylabel('Tracks counted')
-
-    plt.savefig('Fig_10a.eps', bbox_inches='tight')
-
-    # Figure 10 (b).
-    man_count = pd.read_excel('manual_count/manual_dataset01_Kr-78_8,5min_incid.xls')
-    water_count = pd.read_csv('water_count/water_dataset01_Kr-78_8,5min_incid.txt')
-    auto_count = pd.read_csv('auto_count/auto_dataset01_Kr-78_8,5min_incid.txt')
-    manual, comp, auto, auto_best = [{} for _ in range(4)]
-
-    for idx, folder in enumerate(folders):
-        manual[samples[idx]] = man_count[man_count['folder'] == folder]
-        water[samples[idx]] = comp_count[water_count['folder'] == folder]
-        auto[samples[idx]] = auto_count[auto_count['folder'] == folder]
-
-    for key, val in auto.items():
-        # best candidate.
-        auto_best[key] = val[(val['initial_radius'] == candbest_85[0]) &
-                             (val['delta_radius'] == candbest_85[1])]
-
-    man_vs_auto = []
-
-    for key, val in manual.items():
-        # data: manual, comparison, auto
-        man_vs_auto.append(np.asarray(val.manual_count))
-        man_vs_auto.append(np.asarray(water[key].comp_count))
-        man_vs_auto.append(np.asarray(auto_best[key].auto_count))
-
-    fig, ax = plt.subplots(figsize=(16, 10))
-    box_plot = ax.boxplot(man_vs_auto, flierprops=flier_props,
-                          positions=pos)
-
-    ax.set_xticks(x_ticks)
-    ax.set_xticklabels(x_labels)
-
-    num_boxes = len(man_vs_auto)
-    medians = list(range(num_boxes))
-
-    for i in range(num_boxes):
-        box = box_plot['boxes'][i]
-        boxX, boxY = [[] for _ in range(2)]
-        for j in range(5):
-            boxX.append(box.get_xdata()[j])
-            boxY.append(box.get_ydata()[j])
-        box_coords = list(zip(boxX, boxY))
-        box_polygon = mpatches.Polygon(box_coords,
-                                       facecolor=box_colors[i])
-        ax.add_patch(box_polygon)
-
-        med = box_plot['medians'][i]
-        medianX, medianY = [[] for _ in range(2)]
-        for j in range(2):
-            medianX.append(med.get_xdata()[j])
-            medianY.append(med.get_ydata()[j])
-            plt.plot(medianX, medianY, 'k')
-            medians[i] = medianY[0]
-        # overplot the sample averages with horizontal alignment
-        # in the center of each box.
-        plt.plot([np.average(med.get_xdata())],
-                 [np.average(man_vs_auto[i])],
-                 color='w', marker='P', markeredgecolor='k')
-
-    ax.set_xlabel('Sample number')
-    ax.set_ylabel('Tracks counted')
-
-    plt.savefig('Fig_10b.eps', bbox_inches='tight')
-
-    return None
-
-
-def figure_10_new():
     """
     Figure 10. Comparison between manual and automatic counting for (a,
     b) 4.5 min etching samples and (c, d) 8.5 min etching samples. (a,
@@ -660,6 +474,69 @@ def figure_10_new():
     x_labels = ['K0', 'K20', 'K30', 'K40', 'K50', 'K60', 'K70',
                 'K80', 'K90']
 
+    # Figure 10 (a).
+    man_count = pd.read_excel('manual_count/manual_dataset01_Kr-78_4,5min_incid.xls')
+    comp_count = pd.read_csv('comp_count/comp_dataset01_Kr-78_4,5min_incid.txt')
+    auto_count = pd.read_csv('auto_count/auto_dataset01_Kr-78_4,5min_incid.txt')
+    manual, comp, auto, auto_best = [{} for _ in range(4)]
+
+    for idx, folder in enumerate(folders):
+        manual[samples[idx]] = man_count[man_count['folder'] == folder]
+        comp[samples[idx]] = comp_count[comp_count['folder'] == folder]
+        auto[samples[idx]] = auto_count[auto_count['folder'] == folder]
+
+    for key, val in auto.items():
+        # best candidate.
+        auto_best[key] = val[(val['initial_radius'] == candbest_45[0]) &
+                             (val['delta_radius'] == candbest_45[1])]
+
+    man_vs_auto = []
+
+    for key, val in manual.items():
+        # data: manual, comparison, auto
+        man_vs_auto.append(np.asarray(val.manual_count))
+        man_vs_auto.append(np.asarray(comp[key].comp_count))
+        man_vs_auto.append(np.asarray(auto_best[key].auto_count))
+
+    fig, ax = plt.subplots(figsize=(16, 10))
+    box_plot = ax.boxplot(man_vs_auto, flierprops=flier_props,
+                          positions=pos)
+
+    ax.set_xticks(x_ticks)
+    ax.set_xticklabels(x_labels)
+
+    num_boxes = len(man_vs_auto)
+    medians = list(range(num_boxes))
+
+    for i in range(num_boxes):
+        box = box_plot['boxes'][i]
+        boxX, boxY = [[] for _ in range(2)]
+        for j in range(5):
+            boxX.append(box.get_xdata()[j])
+            boxY.append(box.get_ydata()[j])
+        box_coords = list(zip(boxX, boxY))
+        box_polygon = mpatches.Polygon(box_coords,
+                                       facecolor=box_colors[i])
+        ax.add_patch(box_polygon)
+
+        med = box_plot['medians'][i]
+        medianX, medianY = [[] for _ in range(2)]
+        for j in range(2):
+            medianX.append(med.get_xdata()[j])
+            medianY.append(med.get_ydata()[j])
+            plt.plot(medianX, medianY, 'k')
+            medians[i] = medianY[0]
+        # overplot the sample averages with horizontal alignment
+        # in the center of each box.
+        plt.plot([np.average(med.get_xdata())],
+                 [np.average(man_vs_auto[i])],
+                 color='w', marker='P', markeredgecolor='k')
+
+    ax.set_xlabel('Sample number')
+    ax.set_ylabel('Tracks counted')
+
+    plt.savefig('Fig_10a.eps', bbox_inches='tight')
+
     # Figure 10 (b).
     fig, ax = plt.subplots(figsize=(16, 10))
 
@@ -711,6 +588,69 @@ def figure_10_new():
               loc='lower right', ncol=1, frameon=False)
 
     plt.savefig('Fig_10b.eps', bbox_inches='tight')
+
+    # Figure 10 (c).
+    man_count = pd.read_excel('manual_count/manual_dataset01_Kr-78_8,5min_incid.xls')
+    comp_count = pd.read_csv('comp_count/comp_dataset01_Kr-78_8,5min_incid.txt')
+    auto_count = pd.read_csv('auto_count/auto_dataset01_Kr-78_8,5min_incid.txt')
+    manual, comp, auto, auto_best = [{} for _ in range(4)]
+
+    for idx, folder in enumerate(folders):
+        manual[samples[idx]] = man_count[man_count['folder'] == folder]
+        comp[samples[idx]] = comp_count[comp_count['folder'] == folder]
+        auto[samples[idx]] = auto_count[auto_count['folder'] == folder]
+
+    for key, val in auto.items():
+        # best candidate.
+        auto_best[key] = val[(val['initial_radius'] == candbest_85[0]) &
+                             (val['delta_radius'] == candbest_85[1])]
+
+    man_vs_auto = []
+
+    for key, val in manual.items():
+        # data: manual, comparison, auto
+        man_vs_auto.append(np.asarray(val.manual_count))
+        man_vs_auto.append(np.asarray(comp[key].comp_count))
+        man_vs_auto.append(np.asarray(auto_best[key].auto_count))
+
+    fig, ax = plt.subplots(figsize=(16, 10))
+    box_plot = ax.boxplot(man_vs_auto, flierprops=flier_props,
+                          positions=pos)
+
+    ax.set_xticks(x_ticks)
+    ax.set_xticklabels(x_labels)
+
+    num_boxes = len(man_vs_auto)
+    medians = list(range(num_boxes))
+
+    for i in range(num_boxes):
+        box = box_plot['boxes'][i]
+        boxX, boxY = [[] for _ in range(2)]
+        for j in range(5):
+            boxX.append(box.get_xdata()[j])
+            boxY.append(box.get_ydata()[j])
+        box_coords = list(zip(boxX, boxY))
+        box_polygon = mpatches.Polygon(box_coords,
+                                       facecolor=box_colors[i])
+        ax.add_patch(box_polygon)
+
+        med = box_plot['medians'][i]
+        medianX, medianY = [[] for _ in range(2)]
+        for j in range(2):
+            medianX.append(med.get_xdata()[j])
+            medianY.append(med.get_ydata()[j])
+            plt.plot(medianX, medianY, 'k')
+            medians[i] = medianY[0]
+        # overplot the sample averages with horizontal alignment
+        # in the center of each box.
+        plt.plot([np.average(med.get_xdata())],
+                 [np.average(man_vs_auto[i])],
+                 color='w', marker='P', markeredgecolor='k')
+
+    ax.set_xlabel('Sample number')
+    ax.set_ylabel('Tracks counted')
+
+    plt.savefig('Fig_10c.eps', bbox_inches='tight')
 
     # Figure 10 (d).
     fig, ax = plt.subplots(figsize=(16, 10))
