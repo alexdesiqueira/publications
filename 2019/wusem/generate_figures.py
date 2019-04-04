@@ -25,6 +25,7 @@ photomicrographs using successive erosions as watershed markers -
 Supplementary Material'. If not, see <http://www.gnu.org/licenses/>.
 """
 
+from glob import glob
 from itertools import chain, product
 from matplotlib import mlab
 from matplotlib.animation import ArtistAnimation
@@ -49,7 +50,7 @@ import warnings
 
 # Setting up the figures appearance.
 plt.rcParams['font.family'] = 'monospace'
-plt.rcParams['font.size'] = 20
+plt.rcParams['font.size'] = 30
 plt.rcParams['axes.labelsize'] = plt.rcParams['font.size']
 plt.rcParams['axes.titlesize'] = 1.2*plt.rcParams['font.size']
 plt.rcParams['legend.fontsize'] = plt.rcParams['font.size']
@@ -418,12 +419,10 @@ def figure_9():
 
 def figure_10():
     """
-    Figure 10. Comparison between manual and automatic counting for (a,
-    b) 4.5 min etching samples and (c, d) 8.5 min etching samples. (a,
-    c) white: manual counting. Gray: flooding watershed counting. Red
-    line: distribution median. White signal: distribution mean. (b, d)
-    dashed: 1:1 line. Red line: regression for the WUSEM counting data.
-    Black line: regression for the flooding watershed counting data.
+    Figure 10. Comparison between manual and automatic counting for 4.5
+    min etching samples. White: manual counting. Light gray: classic
+    watershed counting. Dark gray: H-watershed counting. Red line:
+    distribution median. White signal: distribution mean.
 
     Notes
     -----
@@ -443,273 +442,136 @@ def figure_10():
     create-a-color-generator-from-given-colormap-in-matplotlib
     """
 
-    # defining some helping variables.
-    samples = ['0', '20', '30', '40', '50', '60', '70', '80', '90']
-    folders = ['K0_incid', 'K20_incid', 'K30_incid', 'K40_incid',
-               'K50_incid', 'K60_incid', 'K70_incid', 'K80_incid',
-               'K90_incid']
+    man_count = pd.read_excel(('counting/manual_count/'
+                               'manual_dataset01_Kr-78_4,5min_incid.xls'))
+    wusem_count = pd.read_csv(('counting/wusem_count/'
+                               'wusem_dataset01_Kr-78_4,5min_incid.txt'))
+    water_count = pd.read_csv(('counting/water_count/'
+                               'water_dataset01_Kr-78_4,5min_incid.txt'))
+    hwater_count = pd.read_csv(('counting/hwater_count/'
+                                'hwater_dataset01_Kr-78_4,5min_incid.txt'))
 
-    pos = list(range(1, 28))  # manual, comp and auto: 8 spaces each
+    radii_best = (10, 20)
+    seed_best = 5
 
-    manual_color = '1'
-    comp_color = '0.5'
-    plot_colors = {'0': '#440154', '20': '#482878', '30': '#3e4989',
-                   '40': '#31688e', '50': '#26828e', '60': '#35b779',
-                   '70': '#6ece58', '80': '#b5de2b', '90': '#fde725'}
-    compfit_color = 'k'
-    autofit_color = '#cb181d'
-    box_colors = []
-    candbest_45 = (10, 20)
-    candbest_85 = (10, 14)
+    _aux_figs_10_11_(man_count, wusem_count, water_count, hwater_count,
+                    radii_best, seed_best)
 
-    for _, val in plot_colors.items():
-        box_colors.append(manual_color)
-        box_colors.append(comp_color)
-        box_colors.append(val)
-
-    flier_props = dict(marker='P', markerfacecolor='#386cb0',
-                       markeredgecolor='#386cb0', linestyle='none')
-
-    x_ticks = np.arange(2, 27, 3)
-    x_labels = ['K0', 'K20', 'K30', 'K40', 'K50', 'K60', 'K70',
-                'K80', 'K90']
-
-    # Figure 10 (a).
-    man_count = pd.read_excel('manual_count/manual_dataset01_Kr-78_4,5min_incid.xls')
-    comp_count = pd.read_csv('comp_count/comp_dataset01_Kr-78_4,5min_incid.txt')
-    auto_count = pd.read_csv('auto_count/auto_dataset01_Kr-78_4,5min_incid.txt')
-    manual, comp, auto, auto_best = [{} for _ in range(4)]
-
-    for idx, folder in enumerate(folders):
-        manual[samples[idx]] = man_count[man_count['folder'] == folder]
-        comp[samples[idx]] = comp_count[comp_count['folder'] == folder]
-        auto[samples[idx]] = auto_count[auto_count['folder'] == folder]
-
-    for key, val in auto.items():
-        # best candidate.
-        auto_best[key] = val[(val['initial_radius'] == candbest_45[0]) &
-                             (val['delta_radius'] == candbest_45[1])]
-
-    man_vs_auto = []
-
-    for key, val in manual.items():
-        # data: manual, comparison, auto
-        man_vs_auto.append(np.asarray(val.manual_count))
-        man_vs_auto.append(np.asarray(comp[key].comp_count))
-        man_vs_auto.append(np.asarray(auto_best[key].auto_count))
-
-    fig, ax = plt.subplots(figsize=(16, 10))
-    box_plot = ax.boxplot(man_vs_auto, flierprops=flier_props,
-                          positions=pos)
-
-    ax.set_xticks(x_ticks)
-    ax.set_xticklabels(x_labels)
-
-    num_boxes = len(man_vs_auto)
-    medians = list(range(num_boxes))
-
-    for i in range(num_boxes):
-        box = box_plot['boxes'][i]
-        boxX, boxY = [[] for _ in range(2)]
-        for j in range(5):
-            boxX.append(box.get_xdata()[j])
-            boxY.append(box.get_ydata()[j])
-        box_coords = list(zip(boxX, boxY))
-        box_polygon = mpatches.Polygon(box_coords,
-                                       facecolor=box_colors[i])
-        ax.add_patch(box_polygon)
-
-        med = box_plot['medians'][i]
-        medianX, medianY = [[] for _ in range(2)]
-        for j in range(2):
-            medianX.append(med.get_xdata()[j])
-            medianY.append(med.get_ydata()[j])
-            plt.plot(medianX, medianY, 'k')
-            medians[i] = medianY[0]
-        # overplot the sample averages with horizontal alignment
-        # in the center of each box.
-        plt.plot([np.average(med.get_xdata())],
-                 [np.average(man_vs_auto[i])],
-                 color='w', marker='P', markeredgecolor='k')
-
-    ax.set_xlabel('Sample number')
-    ax.set_ylabel('Tracks counted')
-
-    plt.savefig('Fig_10a.eps', bbox_inches='tight')
-
-    # Figure 10 (b).
-    fig, ax = plt.subplots(figsize=(16, 10))
-
-    # preparing fit variables.
-    x = np.linspace(0, 50, 1000)
-    aux_manual, aux_comp, aux_auto = [[] for _ in range(3)]
-
-    for key, val in manual.items():
-        ax.plot(val.manual_count,
-                auto_best[key].auto_count,
-                color=plot_colors[key],
-                marker='.',
-                linestyle='None',
-                markersize=18)
-
-        aux_manual.append(val.manual_count.tolist())
-        aux_comp.append(comp[key].comp_count.tolist())
-        aux_auto.append(auto_best[key].auto_count.tolist())
-
-    aux_manual = list(chain.from_iterable(aux_manual))
-    aux_comp = list(chain.from_iterable(aux_comp))
-    aux_auto = list(chain.from_iterable(aux_auto))
-
-    # fitting a line in the data.
-    fit = np.polyfit(aux_manual, aux_auto, deg=1)
-    fit_fn = np.poly1d(fit)
-    ax.plot(aux_manual, fit_fn(aux_manual), linewidth=3, color=autofit_color)
-    ax.plot(x, x, '--', color='k')
-
-    fit_comp = np.polyfit(aux_manual, aux_comp, deg=1)
-    fit_fn2 = np.poly1d(fit_comp)
-    ax.plot(aux_manual, fit_fn2(aux_manual), linewidth=3, color=compfit_color)
-
-    # setting axes and labels.
-    ax.axis([0, 50, 0, 50])
-    ax.set_xlabel('Manual counting')
-    ax.set_ylabel('Automatic counting')
-
-    # preparing legend.
-    sample = []
-
-    for key, var in plot_colors.items():
-        sample.append(mpatches.Patch(color=var,
-                                     label='Sample K' + str(key)))
-
-    ax.legend(handles=[sample[0], sample[1], sample[2],
-                       sample[3], sample[4], sample[5],
-                       sample[6], sample[7], sample[8]],
-              loc='lower right', ncol=1, frameon=False)
-
-    plt.savefig('Fig_10b.eps', bbox_inches='tight')
-
-    # Figure 10 (c).
-    man_count = pd.read_excel('manual_count/manual_dataset01_Kr-78_8,5min_incid.xls')
-    comp_count = pd.read_csv('comp_count/comp_dataset01_Kr-78_8,5min_incid.txt')
-    auto_count = pd.read_csv('auto_count/auto_dataset01_Kr-78_8,5min_incid.txt')
-    manual, comp, auto, auto_best = [{} for _ in range(4)]
-
-    for idx, folder in enumerate(folders):
-        manual[samples[idx]] = man_count[man_count['folder'] == folder]
-        comp[samples[idx]] = comp_count[comp_count['folder'] == folder]
-        auto[samples[idx]] = auto_count[auto_count['folder'] == folder]
-
-    for key, val in auto.items():
-        # best candidate.
-        auto_best[key] = val[(val['initial_radius'] == candbest_85[0]) &
-                             (val['delta_radius'] == candbest_85[1])]
-
-    man_vs_auto = []
-
-    for key, val in manual.items():
-        # data: manual, comparison, auto
-        man_vs_auto.append(np.asarray(val.manual_count))
-        man_vs_auto.append(np.asarray(comp[key].comp_count))
-        man_vs_auto.append(np.asarray(auto_best[key].auto_count))
-
-    fig, ax = plt.subplots(figsize=(16, 10))
-    box_plot = ax.boxplot(man_vs_auto, flierprops=flier_props,
-                          positions=pos)
-
-    ax.set_xticks(x_ticks)
-    ax.set_xticklabels(x_labels)
-
-    num_boxes = len(man_vs_auto)
-    medians = list(range(num_boxes))
-
-    for i in range(num_boxes):
-        box = box_plot['boxes'][i]
-        boxX, boxY = [[] for _ in range(2)]
-        for j in range(5):
-            boxX.append(box.get_xdata()[j])
-            boxY.append(box.get_ydata()[j])
-        box_coords = list(zip(boxX, boxY))
-        box_polygon = mpatches.Polygon(box_coords,
-                                       facecolor=box_colors[i])
-        ax.add_patch(box_polygon)
-
-        med = box_plot['medians'][i]
-        medianX, medianY = [[] for _ in range(2)]
-        for j in range(2):
-            medianX.append(med.get_xdata()[j])
-            medianY.append(med.get_ydata()[j])
-            plt.plot(medianX, medianY, 'k')
-            medians[i] = medianY[0]
-        # overplot the sample averages with horizontal alignment
-        # in the center of each box.
-        plt.plot([np.average(med.get_xdata())],
-                 [np.average(man_vs_auto[i])],
-                 color='w', marker='P', markeredgecolor='k')
-
-    ax.set_xlabel('Sample number')
-    ax.set_ylabel('Tracks counted')
-
-    plt.savefig('Fig_10c.eps', bbox_inches='tight')
-
-    # Figure 10 (d).
-    fig, ax = plt.subplots(figsize=(16, 10))
-
-    # preparing fit variables.
-    x = np.linspace(0, 50, 1000)
-    aux_manual, aux_comp, aux_auto = [[] for _ in range(3)]
-
-    for key, val in manual.items():
-        ax.plot(val.manual_count,
-                auto_best[key].auto_count,
-                color=plot_colors[key],
-                marker='.',
-                linestyle='None',
-                markersize=18)
-
-        aux_manual.append(val.manual_count.tolist())
-        aux_comp.append(comp[key].comp_count.tolist())
-        aux_auto.append(auto_best[key].auto_count.tolist())
-
-    aux_manual = list(chain.from_iterable(aux_manual))
-    aux_comp = list(chain.from_iterable(aux_comp))
-    aux_auto = list(chain.from_iterable(aux_auto))
-
-    # fitting a line in the data.
-    fit = np.polyfit(aux_manual, aux_auto, deg=1)
-    fit_fn = np.poly1d(fit)
-    ax.plot(aux_manual, fit_fn(aux_manual), linewidth=3, color=autofit_color)
-    ax.plot(x, x, '--', color='k')
-
-    fit_comp = np.polyfit(aux_manual, aux_comp, deg=1)
-    fit_fn2 = np.poly1d(fit_comp)
-    ax.plot(aux_manual, fit_fn2(aux_manual), linewidth=3, color=compfit_color)
-
-    # setting axes and labels.
-    ax.axis([0, 50, 0, 50])
-    ax.set_xlabel('Manual counting')
-    ax.set_ylabel('Automatic counting')
-
-    # preparing legend.
-    sample = []
-
-    for key, var in plot_colors.items():
-        sample.append(mpatches.Patch(color=var,
-                                     label='Sample K' + str(key)))
-
-    ax.legend(handles=[sample[0], sample[1], sample[2],
-                       sample[3], sample[4], sample[5],
-                       sample[6], sample[7], sample[8]],
-              loc='lower right', ncol=1, frameon=False)
-
-    plt.savefig('Fig_10d.eps', bbox_inches='tight')
+    for file in glob('Fig-*.eps'):
+        os.rename(file, file[:3] + '_10' + file[3:])
 
     return None
 
 
 def figure_11():
     """
-    Figure 11. Regions from Figure 3 complying with ε ≤ 0.3. (a) labeled
+    Figure 11. Comparison between manual and automatic counting for 8.5
+    min etching samples. White: manual counting. Light gray: classic
+    watershed counting. Dark gray: H-watershed counting. Red line:
+    distribution median. White signal: distribution mean.
+
+    Notes
+    -----
+
+    1. Based on the example available at:
+    http://matplotlib.org/examples/pylab_examples/boxplot_demo2.html
+    2. Colors extracted from the 'viridis' colormap. Code used:
+
+    >>> from pylab import *
+    >>> cmap = cm.get_cmap('viridis', 10)
+    >>> for i in range(cmap.N):
+    ...    rgb = cmap(i)[:3]
+    ...    print(matplotlib.colors.rgb2hex(rgb))
+
+    Code based on the example given in the best answer at:
+    https://stackoverflow.com/questions/3016283/\
+    create-a-color-generator-from-given-colormap-in-matplotlib
+    """
+
+    man_count = pd.read_excel(('counting/manual_count/'
+                               'manual_dataset01_Kr-78_8,5min_incid.xls'))
+    wusem_count = pd.read_csv(('counting/wusem_count/'
+                               'wusem_dataset01_Kr-78_8,5min_incid.txt'))
+    water_count = pd.read_csv(('counting/water_count/'
+                               'water_dataset01_Kr-78_8,5min_incid.txt'))
+    hwater_count = pd.read_csv(('counting/hwater_count/'
+                                'hwater_dataset01_Kr-78_8,5min_incid.txt'))
+
+    radii_best = (10, 14)  # best WUSEM parameters for 8.5 min
+    seed_best = 5  # best H-watershed seed for 8.5 min
+
+    _aux_figs_10_11_(man_count, wusem_count, water_count, hwater_count,
+                    radii_best, seed_best)
+
+    for file in glob('Fig-*.eps'):
+        os.rename(file, file[:3] + '_11' + file[3:])
+
+    return None
+
+
+def figure_12():
+    """
+    Figure 12. Comparison between manual and automatic counting for (a)
+    4.5 min etching samples and (b) 8.5 min etching samples. Dashed:
+    1:1 line. Cyan, light gray and dark gray lines: regression for the
+    WUSEM, classic watershed and H-watershed counting data, respectively.
+
+    Notes
+    -----
+
+    1. Based on the example available at:
+    http://matplotlib.org/examples/pylab_examples/boxplot_demo2.html
+    2. Colors extracted from the 'viridis' colormap. Code used:
+
+    >>> from pylab import *
+    >>> cmap = cm.get_cmap('viridis', 10)
+    >>> for i in range(cmap.N):
+    ...    rgb = cmap(i)[:3]
+    ...    print(matplotlib.colors.rgb2hex(rgb))
+
+    Code based on the example given in the best answer at:
+    https://stackoverflow.com/questions/3016283/\
+    create-a-color-generator-from-given-colormap-in-matplotlib
+    """
+
+    # Figure 12 (a).
+    man_count = pd.read_excel(('counting/manual_count/'
+                               'manual_dataset01_Kr-78_4,5min_incid.xls'))
+    wusem_count = pd.read_csv(('counting/wusem_count/'
+                               'wusem_dataset01_Kr-78_4,5min_incid.txt'))
+    water_count = pd.read_csv(('counting/water_count/'
+                               'water_dataset01_Kr-78_4,5min_incid.txt'))
+    hwater_count = pd.read_csv(('counting/hwater_count/'
+                                'hwater_dataset01_Kr-78_4,5min_incid.txt'))
+
+    _aux_fig_12_(man_count, wusem_count, water_count, hwater_count,
+                 radii_best=(10, 20), seed_best=5)
+
+    for file in glob('Fig_12.eps'):
+        os.rename(file, file[:6] + 'a' + file[6:])
+
+    # Figure 12 (b).
+    man_count = pd.read_excel(('counting/manual_count/'
+                               'manual_dataset01_Kr-78_8,5min_incid.xls'))
+    wusem_count = pd.read_csv(('counting/wusem_count/'
+                               'wusem_dataset01_Kr-78_8,5min_incid.txt'))
+    water_count = pd.read_csv(('counting/water_count/'
+                               'water_dataset01_Kr-78_8,5min_incid.txt'))
+    hwater_count = pd.read_csv(('counting/hwater_count/'
+                                'hwater_dataset01_Kr-78_8,5min_incid.txt'))
+
+    _aux_fig_12_(man_count, wusem_count, water_count, hwater_count,
+                 radii_best=(10, 14), seed_best=5)
+
+    for file in glob('Fig_12.eps'):
+        os.rename(file, file[:6] + 'b' + file[6:])
+
+    return None
+
+
+def figure_13():
+    """
+    Figure 13. Regions from Figure 3 complying with ε ≤ 0.3. (a) labeled
     regions. (b) tracks correspondent to (a) in their original gray
     levels. Colormaps: (a) nipy spectral. (b) magma.
     """
@@ -724,23 +586,23 @@ def figure_11():
                                           delta_radius=best_arg[1],
                                           toler_ecc=0.3)
 
-    # Figure 11 (a).
+    # Figure 13 (a).
     plt.figure(figsize=(15, 10))
     plt.imshow(labels, cmap='nipy_spectral')
-    plt.savefig('Fig_11a.eps', bbox_inches='tight')
+    plt.savefig('Fig_13a.eps', bbox_inches='tight')
 
 
-    # Figure 11 (b).
+    # Figure 13 (b).
     plt.figure(figsize=(15, 10))
     plt.imshow(objects, cmap='magma')
-    plt.savefig('Fig_11b.eps', bbox_inches='tight')
+    plt.savefig('Fig_13b.eps', bbox_inches='tight')
 
     return None
 
 
-def figure_12():
+def figure_14():
     """
-    Figure 12. Relation between incident energy versus mean diameter
+    Figure 14. Relation between incident energy versus mean diameter
     product ((a) 4.5 min; (c) 8.5 min samples, left Y axis) and incident
     energy versus mean gray levels ((b) 4.5 min; (d) 8.5 min samples, left
     Y axis). Cyan dashed line: electronic energy loss calculated with
@@ -751,8 +613,8 @@ def figure_12():
                     '50': 422, '60': 320, '70': 213, '80': 105,
                     '90': 18}
 
-    file_45 = pd.read_csv('auto_count/roundinfo_dataset01_Kr-78_4,5min.txt')
-    file_85 = pd.read_csv('auto_count/roundinfo_dataset01_Kr-78_8,5min.txt')
+    file_45 = pd.read_csv('counting/wusem_count/roundinfo_dataset01_Kr-78_4,5min.txt')
+    file_85 = pd.read_csv('counting/wusem_count/roundinfo_dataset01_Kr-78_8,5min.txt')
 
     kr_dedx = pd.read_csv('Kr_dEdx.txt')
 
@@ -770,7 +632,7 @@ def figure_12():
     data_auto45 = [data_45]
     data_auto85 = [data_85]
 
-    # Figure 12 (a).
+    # Figure 14 (a).
     fig, ax = plt.subplots(figsize=(15, 10))
 
     for idx, data in enumerate(data_auto45):
@@ -801,9 +663,9 @@ def figure_12():
                  color=dedx_color)
     ax_dedx.set_ylabel('Electronic dE/dx (keV/$\mu m$)')
 
-    plt.savefig('Fig_12a.eps', bbox_inches='tight')
+    plt.savefig('Fig_14a.eps', bbox_inches='tight')
 
-    # Figure 12 (b).
+    # Figure 14 (b).
     fig, ax = plt.subplots(figsize=(15, 10))
 
     for idx, data in enumerate(data_auto45):
@@ -831,9 +693,9 @@ def figure_12():
                  color=dedx_color)
     ax_dedx.set_ylabel('Electronic dE/dx (keV/$\mu m$)')
 
-    plt.savefig('Fig_12b.eps', bbox_inches='tight')
+    plt.savefig('Fig_14b.eps', bbox_inches='tight')
 
-    # Figure 12 (c).
+    # Figure 14 (c).
     fig, ax = plt.subplots(figsize=(15, 10))
 
     for idx, data in enumerate(data_auto85):
@@ -864,9 +726,9 @@ def figure_12():
                  color=dedx_color)
     ax_dedx.set_ylabel('Electronic dE/dx (keV/$\mu m$)')
 
-    plt.savefig('Fig_12c.eps', bbox_inches='tight')
+    plt.savefig('Fig_14c.eps', bbox_inches='tight')
 
-    # Figure 12 (d).
+    # Figure 14 (d).
     fig, ax = plt.subplots(figsize=(15, 10))
 
     for idx, data in enumerate(data_auto85):
@@ -894,14 +756,14 @@ def figure_12():
                  color=dedx_color)
     ax_dedx.set_ylabel('Electronic dE/dx (keV/$\mu m$)')
 
-    plt.savefig('Fig_12d.eps', bbox_inches='tight')
+    plt.savefig('Fig_14d.eps', bbox_inches='tight')
 
     return None
 
 
-def figure_13():
+def figure_15():
     """
-    Figure 13. Tracks separated in Figure 11 using the WUSEM algorithm,
+    Figure 15. Tracks separated in Figure 11 using the WUSEM algorithm,
     and then enumerated using the function enumerate_objects(). As in
     Figure 5, the size of the first structuring element is small when
     compared to the objects, and smaller regions where tracks overlap are
@@ -910,17 +772,17 @@ def figure_13():
     delta_radius = 2.
     """
 
-    image = imread('orig_figures/dataset_02/FT-Lab_19.07.390.MAG1.jpg',
+    image = imread('figures/orig_figures/dataset_02/FT-Lab_19.07.390.MAG1.jpg',
                    as_grey=True)
 
-    # Figure 13 (a).
+    # Figure 15 (a).
     img_bin = binary_fill_holes(image < threshold_isodata(image))
 
     plt.figure(figsize=(15, 10))
     plt.imshow(img_bin, cmap='gray')
-    plt.savefig('Fig_13a.eps', bbox_inches='tight')
+    plt.savefig('Fig_15a.eps', bbox_inches='tight')
 
-    # Figure 13 (b).
+    # Figure 15 (b).
     img_labels, _, _ = ds.segmentation_wusem(img_bin,
                                              initial_radius=5,
                                              delta_radius=12)
@@ -932,14 +794,14 @@ def figure_13():
 
     plt.figure(figsize=(15, 10))
     plt.imshow(img_numbers, cmap='gray')
-    plt.savefig('Fig_13b.eps', bbox_inches='tight')
+    plt.savefig('Fig_15b.eps', bbox_inches='tight')
 
     return None
 
 
-def figure_14():
+def figure_16():
     """
-    Figure 14. Comparison between manual and automatic counting for
+    Figure 16. Comparison between manual and automatic counting for
     photomicrographs in the second dataset, when (a, b) considering border
     tracks and (c, d) ignoring border tracks. Automatic results are closer
     to manual ones when ignoring border tracks. (a, c) gray: manual
@@ -971,9 +833,9 @@ def figure_14():
     compfit_color, autofit_color = ('k', '#cb181d')
     box_colors = []
 
-    man_count = pd.read_excel('manual_count/manual_dataset02.xls')
-    comp_count = pd.read_csv('comp_count/comp_dataset02.txt')
-    auto_count = pd.read_csv('auto_count/auto_dataset02.txt')
+    man_count = pd.read_excel('counting/manual_count/manual_dataset02.xls')
+    comp_count = pd.read_csv('counting/comp_count/comp_dataset02.txt')
+    auto_count = pd.read_csv('counting/auto_count/auto_dataset02.txt')
 
     manual, comp, auto, mean_man = [{} for _ in range(4)]
     manual = {'MAG1': man_count.query('image <= 9'),
@@ -1014,7 +876,7 @@ def figure_14():
         man_vs_auto.append(np.asarray(comp[key].comp_count))
         man_vs_auto.append(np.asarray(auto_best[key].auto_count))
 
-    # Figure 14 (a).
+    # Figure 16 (a).
     fig, ax = plt.subplots(figsize=(16, 10))
     box_plot = ax.boxplot(man_vs_auto,
                           flierprops=flier_props,
@@ -1055,9 +917,9 @@ def figure_14():
     ax.set_xlabel('Sample number')
     ax.set_ylabel('Tracks counted')
 
-    plt.savefig('Fig_14a.eps', bbox_inches='tight')
+    plt.savefig('Fig_16a.eps', bbox_inches='tight')
 
-    # Figure 14 (b).
+    # Figure 16 (b).
     fig, ax = plt.subplots(figsize=(16, 10))
 
     # preparing fit variables.
@@ -1111,14 +973,14 @@ def figure_14():
     ax.legend(handles=[sample[0], sample[1]],
               loc='lower right', ncol=1, frameon=False)
 
-    plt.savefig('Fig_14b.eps', bbox_inches='tight')
+    plt.savefig('Fig_16b.eps', bbox_inches='tight')
 
     return None
 
 
-def figure_15():
+def figure_17():
     """
-    Figure 15. When using suitable input parameters, WUSEM may perform
+    Figure 17. When using suitable input parameters, WUSEM may perform
     better in certain regions where the classic watershed does not
     return reliable results. For instance, the highlighted region in (a)
     presents three tracks. WUSEM separates them correctly, but the region
@@ -1131,8 +993,8 @@ def figure_15():
     algorithm: initial_radius = 15, delta_radius = 4.
     """
 
-    # Figure 15 (a), right.
-    image = imread('orig_figures/dataset_01/Kr-78_4,5min/K0_incid/K0_incid4,5min_2.bmp',
+    # Figure 17 (a), right.
+    image = imread('figures/orig_figures/dataset_01/Kr-78_4,5min/K0_incid/K0_incid4,5min_2.bmp',
                    as_grey=True)
     thresh = threshold_isodata(image)
     img_bin = binary_fill_holes(image < thresh)
@@ -1143,10 +1005,10 @@ def figure_15():
 
     plt.figure(figsize=(15, 10))
     plt.imshow(img_number)
-    plt.savefig('Fig_15a.eps', bbox_inches='tight')
+    plt.savefig('Fig_17a.eps', bbox_inches='tight')
 
-    # Figure 15 (b), right.
-    image = imread('orig_figures/dataset_01/Kr-78_4,5min/K0_incid/K0_incid4,5min_5.bmp',
+    # Figure 17 (b), right.
+    image = imread('figures/orig_figures/dataset_01/Kr-78_4,5min/K0_incid/K0_incid4,5min_5.bmp',
                    as_grey=True)
     thresh = threshold_isodata(image)
     img_bin = binary_fill_holes(image < thresh)
@@ -1157,7 +1019,7 @@ def figure_15():
 
     plt.figure(figsize=(15, 10))
     plt.imshow(img_number)
-    plt.savefig('Fig_15b.eps', bbox_inches='tight')
+    plt.savefig('Fig_17b.eps', bbox_inches='tight')
 
     return None
 
@@ -1467,3 +1329,201 @@ def generate_all_figures():
 
 if __name__ == '__main__':
     generate_all_figures()
+
+
+def _aux_figs_10_11_(man_count, wusem_count, water_count, hwater_count,
+                    radii_best, seed_best):
+
+    # defining some helping variables.
+    samples = ['0', '20', '30', '40', '50', '60', '70', '80', '90']
+    folders = ['K0_incid', 'K20_incid', 'K30_incid', 'K40_incid',
+               'K50_incid', 'K60_incid', 'K70_incid', 'K80_incid',
+               'K90_incid']
+
+    pos = list(range(1, 5))  # manual, watershed, h-watershed and wusem
+
+    manual_color = '#ffffff'
+    water_color = '#d3d3d3'
+    hwater_color = '#778899'
+    wusem_colors = ['#440154', '#482878', '#3e4989',
+                    '#31688e', '#26828e', '#35b779',
+                    '#6ece58', '#b5de2b', '#fde725']
+
+    box_colors = []    
+    for color in wusem_colors:
+        box_colors.append([manual_color, water_color, hwater_color,
+                           color])
+
+
+    flier_props = dict(marker='P', markerfacecolor='#386cb0',
+                       markeredgecolor='#386cb0', linestyle='none')
+
+    x_labels = ['K0', 'K20', 'K30', 'K40', 'K50', 'K60', 'K70',
+                'K80', 'K90']
+
+    manual, wusem, wusem_best, water, hwater, hwater_best = [{} for _ in range(6)]
+
+    for idx, folder in enumerate(folders):
+        manual[samples[idx]] = man_count[man_count['folder'] == folder]
+        wusem[samples[idx]] = wusem_count[wusem_count['folder'] == folder]
+        water[samples[idx]] = water_count[water_count['folder'] == folder]
+        hwater[samples[idx]] = hwater_count[hwater_count['folder'] == folder]
+
+    # best candidate for WUSEM.
+    for key, val in wusem.items():
+        wusem_best[key] = val[(val['initial_radius'] == radii_best[0]) &
+                              (val['delta_radius'] == radii_best[1])]
+
+    # best candidate for H-watershed.
+    for key, val in hwater.items():
+        hwater_best[key] = val[val['seed'] == seed_best]
+
+    man_vs_auto = []
+
+    for key, val in manual.items():
+        # data: manual, classic watershed, h-watershed, wusem
+        man_vs_auto.append([np.asarray(val.manual_count),
+                            np.asarray(water[key].auto_count),
+                            np.asarray(hwater_best[key].auto_count),
+                            np.asarray(wusem_best[key].auto_count)])
+
+    for idx, comp in enumerate(man_vs_auto):
+        fig, ax = plt.subplots(figsize=(10, 10))
+        box_plot = ax.boxplot(comp,
+                              flierprops=flier_props,
+                              positions=pos)
+
+        ax.xaxis.set_major_locator(plt.NullLocator())  # deleting ticks.
+        ax.set_xlabel(x_labels[idx])
+
+        num_boxes = len(comp)
+        medians = list(range(num_boxes))
+
+        for i in range(num_boxes):
+            box = box_plot['boxes'][i]
+            boxX, boxY = [[] for _ in range(2)]
+            for j in range(5):
+                boxX.append(box.get_xdata()[j])
+                boxY.append(box.get_ydata()[j])
+            box_coords = list(zip(boxX, boxY))
+            box_polygon = mpatches.Polygon(box_coords,
+                                           facecolor=box_colors[idx][i])
+            ax.add_patch(box_polygon)
+
+            med = box_plot['medians'][i]
+            medianX, medianY = [[] for _ in range(2)]
+            for j in range(2):
+                medianX.append(med.get_xdata()[j])
+                medianY.append(med.get_ydata()[j])
+                plt.plot(medianX, medianY, 'k')
+                medians[i] = medianY[0]
+            # overplot the sample averages with horizontal alignment
+            # in the center of each box.
+            plt.plot([np.average(med.get_xdata())],
+                     [np.average(man_vs_auto[i])],
+                     color='w', marker='P', markeredgecolor='k')
+
+        if x_labels[idx] in ['K0', 'K40', 'K70']:
+            ax.set_ylabel('Tracks counted')
+
+        plt.savefig('Fig-' + x_labels[idx] + '.eps',
+                    bbox_inches='tight')
+
+    return None
+
+
+def _aux_fig_12_(man_count, wusem_count, water_count, hwater_count,
+                 radii_best, seed_best):
+
+
+    # defining some helping variables.
+    samples = ['0', '20', '30', '40', '50', '60', '70', '80', '90']
+    folders = ['K0_incid', 'K20_incid', 'K30_incid', 'K40_incid',
+               'K50_incid', 'K60_incid', 'K70_incid', 'K80_incid',
+               'K90_incid']
+
+    manual_color = '1'
+    water_color = '0.75'
+    hwater_color = '0.5'
+    wusem_colors = ['#440154', '#482878', '#3e4989',
+                    '#31688e', '#26828e', '#35b779',
+                    '#6ece58', '#b5de2b', '#fde725']
+
+    manual, wusem, wusem_best, water, hwater, hwater_best = [{} for _ in range(6)]
+
+    for idx, folder in enumerate(folders):
+        manual[samples[idx]] = man_count[man_count['folder'] == folder]
+        wusem[samples[idx]] = wusem_count[wusem_count['folder'] == folder]
+        water[samples[idx]] = water_count[water_count['folder'] == folder]
+        hwater[samples[idx]] = hwater_count[hwater_count['folder'] == folder]
+
+    # best candidate for WUSEM.
+    for key, val in wusem.items():
+        wusem_best[key] = val[(val['initial_radius'] == radii_best[0]) &
+                              (val['delta_radius'] == radii_best[1])]
+
+    # best candidate for H-watershed.
+    for key, val in hwater.items():
+        hwater_best[key] = val[val['seed'] == seed_best]
+
+    fig, ax = plt.subplots(figsize=(16, 10))
+
+    # preparing fit variables.
+    x = np.linspace(0, 50, 1000)
+    aux_manual, aux_water, aux_hwater, aux_wusem = [[] for _ in range(4)]
+
+    for idx, (key, val) in enumerate(manual.items()):
+        ax.plot(val.manual_count,
+                wusem_best[key].auto_count,
+                color=wusem_colors[idx],
+                marker='.',
+                linestyle='None',
+                markersize=18)
+
+        aux_manual.append(val.manual_count.tolist())
+        aux_water.append(water[key].auto_count.tolist())
+        aux_hwater.append(hwater_best[key].auto_count.tolist())
+        aux_wusem.append(wusem_best[key].auto_count.tolist())
+
+    aux_manual = list(chain.from_iterable(aux_manual))
+    aux_water = list(chain.from_iterable(aux_water))
+    aux_hwater = list(chain.from_iterable(aux_hwater))
+    aux_wusem = list(chain.from_iterable(aux_wusem))
+
+    # fitting a line in the data.
+    # wusem
+    fit = np.polyfit(aux_manual, aux_wusem, deg=1)
+    fit_fn = np.poly1d(fit)
+    ax.plot(aux_manual, fit_fn(aux_manual), linewidth=4, color=wusem_colors[4])
+    ax.plot(x, x, '--', color='k')
+
+    # classic watershed
+    fit_water = np.polyfit(aux_manual, aux_water, deg=1)
+    fit_fn2 = np.poly1d(fit_water)
+    ax.plot(aux_manual, fit_fn2(aux_manual), linewidth=4, color=water_color)
+
+    # h-watershed
+    fit_hwater = np.polyfit(aux_manual, aux_hwater, deg=1)
+    fit_fn3 = np.poly1d(fit_hwater)
+    ax.plot(aux_manual, fit_fn3(aux_manual), linewidth=4, color=hwater_color)
+
+    # setting axes and labels.
+    ax.axis([0, 50, 0, 50])
+    ax.set_xlabel('Manual counting')
+    ax.set_ylabel('WUSEM counting')
+
+    # preparing legend.
+    sample = []
+
+    for idx, key in enumerate(manual.keys()):
+        sample.append(mpatches.Patch(color=wusem_colors[idx],
+                                     label='Sample K' + str(key)))
+
+    ax.legend(handles=[sample[0], sample[1], sample[2],
+                       sample[3], sample[4], sample[5],
+                       sample[6], sample[7], sample[8]],
+              fontsize=20, loc='lower right', ncol=1, frameon=False)
+
+    plt.savefig('Fig_12.eps', bbox_inches='tight')
+
+    return None
