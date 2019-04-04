@@ -799,7 +799,7 @@ def figure_15():
     return None
 
 
-def figure_16():
+def figure_16():  # arrumar
     """
     Figure 16. Comparison between manual and automatic counting for
     photomicrographs in the second dataset, when (a, b) considering border
