@@ -483,8 +483,8 @@ def separate_tracks_set1(minutes='4,5min', folder='K90_incid',
                          img_number=1, best_args=(5, 4),
                          save_tracks=False):
 
-    img_name = 'orig_figures/dataset_01/Kr-78_' + minutes + '/' + \
-               folder + '/' + folder + minutes + '_' + \
+    img_name = 'figures/orig_figures/dataset_01/Kr-78_' + minutes + \
+               '/' + folder + '/' + folder + minutes + '_' + \
                str(img_number) + '.bmp'
 
     image = imread(img_name, as_grey=True)
@@ -493,7 +493,7 @@ def separate_tracks_set1(minutes='4,5min', folder='K90_incid',
                                        delta_radius=best_args[1],
                                        toler_ecc=0.3)
 
-    data_name = 'auto_count/roundclean_dataset01_Kr-78_' + minutes + \
+    data_name = 'counting/wusem_count/roundclean_dataset01_Kr-78_' + minutes + \
                 '.txt'
     info_clean = pd.read_csv(data_name, index_col=0)
 
@@ -519,18 +519,18 @@ def separate_tracks_set1(minutes='4,5min', folder='K90_incid',
 def separate_tracks_set2(img_number=1, best_args=(10, 8),
                          save_tracks=False):
 
-    info_name = pd.read_csv('orig_figures/dataset_02/software_numbering.txt')
+    info_name = pd.read_csv('figures/orig_figures/dataset_02/software_numbering.txt')
     img_name = info_name.loc[info_name['image_number'] == img_number,
                              'corresp_image'].iloc[0]
 
-    image = imread('orig_figures/dataset_02/' + img_name + '.jpg',
+    image = imread('figures/orig_figures/dataset_02/' + img_name + '.jpg',
                    as_grey=True)
     labels, objects, _ = round_regions(image,
                                        initial_radius=best,
                                        delta_radius=best_args[1],
                                        toler_ecc=0.3)
 
-    data_name = 'auto_count/roundclean_dataset02.txt'
+    data_name = 'counting/wusem_count/roundclean_dataset02.txt'
 
     info_clean = pd.read_csv(data_name, index_col=0)
     track_info = info_clean[info_clean['image'] == img_number]
