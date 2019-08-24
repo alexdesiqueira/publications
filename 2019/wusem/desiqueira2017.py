@@ -154,7 +154,7 @@ def clear_rd_border(image):
 
     aux = np.pad(image, ([1, 0], [1, 0]), mode='constant')
     aux = clear_border(aux)
-    
+
     return aux[:-2, 1:]
 
 
@@ -164,15 +164,15 @@ def comp_wusem_counting(manual, auto, tolerance=2.5):
 
     Parameters
     ----------
-    manual : 
-    
-    auto : 
-    
-    tolerance : 
+    manual :
+
+    auto :
+
+    tolerance :
 
     Returns
     -------
-    step_cand : 
+    step_cand :
     """
 
     step_cand = []
@@ -487,7 +487,7 @@ def separate_tracks_set1(minutes='4,5min', folder='K90_incid',
                '/' + folder + '/' + folder + minutes + '_' + \
                str(img_number) + '.bmp'
 
-    image = imread(img_name, as_grey=True)
+    image = imread(img_name, as_gray=True)
     labels, objects, _ = round_regions(image,
                                        initial_radius=best_args[0],
                                        delta_radius=best_args[1],
@@ -524,7 +524,7 @@ def separate_tracks_set2(img_number=1, best_args=(10, 8),
                              'corresp_image'].iloc[0]
 
     image = imread('figures/orig_figures/dataset_02/' + img_name + '.jpg',
-                   as_grey=True)
+                   as_gray=True)
     labels, objects, _ = round_regions(image,
                                        initial_radius=best,
                                        delta_radius=best_args[1],

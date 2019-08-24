@@ -60,6 +60,8 @@ plt.rcParams['ytick.labelsize'] = plt.rcParams['font.size']
 # defining some very used variables
 LINEWIDTH = 4
 FONTSIZE = 22
+FILE_EXT = '.png'
+PARENT_FOLDER = 'figures/paper/'
 
 # Ignoring warnings.
 warnings.filterwarnings('ignore')
@@ -83,7 +85,7 @@ def figure_3():
     image_animation = []
 
     img_orig = imread(('figures/orig_figures/dataset_01/Kr-78_4,5min/'
-                       'K90_incid/K90_incid4,5min_3.bmp'), as_grey=True)
+                       'K90_incid/K90_incid4,5min_3.bmp'), as_gray=True)
 
     fig = plt.figure(figsize=(15, 10))
 
@@ -91,9 +93,9 @@ def figure_3():
     curr_frame = plt.imshow(img_orig, cmap='gray')
     for i in range(10):
         if i+1 < 10:
-            fname = 'misc/fig_3-frames/frame0' + str(i+1) + '.eps'
+            fname = 'misc/fig_3-frames/frame0' + str(i+1) + FILE_EXT
         else:
-            fname = 'misc/fig_3-frames/frame' + str(i+1) + '.eps'
+            fname = 'misc/fig_3-frames/frame' + str(i+1) + FILE_EXT
         plt.savefig(fname=fname, bbox_inches='tight')
 
     # 2nd image: binary image.
@@ -101,7 +103,7 @@ def figure_3():
     image = binary_fill_holes(aux)
     curr_frame = plt.imshow(image, cmap='gray', animated=True)
     for i in range(10):
-        fname = 'misc/fig_3-frames/frame' + str(i+11) + '.eps'
+        fname = 'misc/fig_3-frames/frame' + str(i+11) + FILE_EXT
         plt.savefig(fname=fname, bbox_inches='tight')
 
     rows, cols = image.shape
@@ -118,7 +120,7 @@ def figure_3():
         erod_aux = binary_erosion(image, selem=disk(curr_radius))
         curr_frame = plt.imshow(erod_aux, cmap='gray', animated=True)
 
-        fname = 'misc/fig_3-frames/frame' + str(counter+21) + '.eps'
+        fname = 'misc/fig_3-frames/frame' + str(counter+21) + FILE_EXT
         plt.savefig(fname=fname, bbox_inches='tight')
 
         if erod_aux.min() == erod_aux.max():
@@ -156,12 +158,12 @@ def figure_3():
     curr_frame = plt.imshow(img_labels, cmap='nipy_spectral',
                             animated=True)
     for i in range(10):
-        fname = 'misc/fig_3-frames/frame' + str(i+57) + '.eps'
+        fname = 'misc/fig_3-frames/frame' + str(i+57) + FILE_EXT
         plt.savefig(fname=fname, bbox_inches='tight')
 
     # Figure 3: saving the video thumbnail.
     plt.imshow(img_labels, cmap='nipy_spectral', animated=True)
-    plt.savefig('Fig03-thumbnail.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig03-thumbnail' + FILE_EXT, bbox_inches='tight')
 
     # last image: numbered image.
     img_number = ds.enumerate_objects(img_orig,
@@ -170,11 +172,11 @@ def figure_3():
 
     curr_frame = plt.imshow(img_number, animated=True)
     for i in range(10):
-        fname = 'misc/fig_3-frames/frame' + str(i+67) + '.eps'
+        fname = 'misc/fig_3-frames/frame' + str(i+67) + FILE_EXT
         plt.savefig(fname=fname, bbox_inches='tight')
 
     # Figure 3.
-    os.system('convert -delay 20 misc/fig_3-frames/frame*.eps Fig03-media.mp4')
+    os.system('convert -delay 20 misc/fig_3-frames/frame* Fig03-media.mp4')
 
     return None
 
@@ -186,14 +188,15 @@ def figure_6():
     """
 
     image = imread(('figures/orig_figures/dataset_01/Kr-78_4,5min/'
-                    'K90_incid/K90_incid4,5min_3.bmp'), as_grey=True)
+                    'K90_incid/K90_incid4,5min_3.bmp'), as_gray=True)
 
     img_bin = binary_fill_holes(image < threshold_isodata(image))
 
     # Figure 6.
     plt.figure(figsize=(15, 10))
     plt.imshow(img_bin, cmap='gray')
-    plt.savefig('Fig06.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig06' + FILE_EXT,
+                bbox_inches='tight')
 
     return None
 
@@ -212,7 +215,7 @@ def figure_7():
     subfig = list(ascii_lowercase[:10])
 
     image = imread(('figures/orig_figures/dataset_01/Kr-78_4,5min/'
-                    'K90_incid/K90_incid4,5min_3.bmp'), as_grey=True)
+                    'K90_incid/K90_incid4,5min_3.bmp'), as_gray=True)
     thresh = threshold_isodata(image)
     img_bin = binary_fill_holes(image < thresh)
 
@@ -242,17 +245,17 @@ def figure_7():
 
         plt.figure(figsize=(15, 10))
         plt.imshow(erod_diff)
-        plt.savefig('Fig07' + subfig[counter-1] + 'l.eps',
+        plt.savefig(PARENT_FOLDER + 'Fig07' + subfig[counter-1] + 'l' + FILE_EXT,
                     bbox_inches='tight')
 
         plt.figure(figsize=(15, 10))
         plt.imshow(markers, cmap='nipy_spectral')
-        plt.savefig('Fig07' + subfig[counter-1] + 'c.eps',
+        plt.savefig(PARENT_FOLDER + 'Fig07' + subfig[counter-1] + 'c' + FILE_EXT,
                     bbox_inches='tight')
 
         plt.figure(figsize=(15, 10))
         plt.imshow(img_labels, cmap='nipy_spectral')
-        plt.savefig('Fig07' + subfig[counter-1] + 'r.eps',
+        plt.savefig(PARENT_FOLDER + 'Fig07' + subfig[counter-1] + 'r' + FILE_EXT,
                     bbox_inches='tight')
 
         counter += 1
@@ -271,7 +274,7 @@ def figure_8():
     """
 
     image = imread(('figures/orig_figures/dataset_01/Kr-78_4,5min/'
-                    'K90_incid/K90_incid4,5min_3.bmp'), as_grey=True)
+                    'K90_incid/K90_incid4,5min_3.bmp'), as_gray=True)
 
     img_bin = binary_fill_holes(image < threshold_isodata(image))
 
@@ -281,7 +284,8 @@ def figure_8():
                                              delta_radius=4)
     plt.figure(figsize=(15, 10))
     plt.imshow(ds.clear_rd_border(img_labels), cmap='nipy_spectral')
-    plt.savefig('Fig08a.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig08a' + FILE_EXT,
+                bbox_inches='tight')
 
     # Figure 8 (b).
     img_numbers = ds.enumerate_objects(image,
@@ -290,7 +294,8 @@ def figure_8():
 
     plt.figure(figsize=(15, 10))
     plt.imshow(img_numbers, cmap='gray')
-    plt.savefig('Fig08b.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig08b' + FILE_EXT,
+                bbox_inches='tight')
 
     return None
 
@@ -367,7 +372,7 @@ def figure_9():
     ax.set_xlim([5, 100])
     ax.set_ylim([-1, 40])
 
-    plt.savefig('Fig09a.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig09a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 9 (b).
     man_count = pd.read_excel(('counting/manual_count/'
@@ -418,7 +423,7 @@ def figure_9():
     ax.set_xlim([5, 100])
     ax.set_ylim([-1, 40])
 
-    plt.savefig('Fig09b.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig09b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -465,8 +470,8 @@ def figure_10():
     _aux_fig_10_(man_count, wusem_count, water_count, hwater_count,
                  radii_best, seed_best)
 
-    filename = 'Fig10.eps'
-    os.rename(filename, filename[:5] + 'a' + filename[5:])
+    filename = PARENT_FOLDER + 'Fig10' + FILE_EXT
+    os.rename(filename, filename[:19] + 'a' + filename[19:])
 
     # Figure 10 (b).
     man_count = pd.read_excel(('counting/manual_count/'
@@ -484,8 +489,8 @@ def figure_10():
     _aux_fig_10_(man_count, wusem_count, water_count, hwater_count,
                     radii_best, seed_best)
 
-    filename = 'Fig10.eps'
-    os.rename(filename, filename[:5] + 'b' + filename[5:])
+    filename = PARENT_FOLDER + 'Fig10' + FILE_EXT
+    os.rename(filename, filename[:19] + 'b' + filename[19:])
 
     return None
 
@@ -528,8 +533,8 @@ def figure_11():
     _aux_fig_11_(man_count, wusem_count, water_count, hwater_count,
                  radii_best=(10, 20), seed_best=5)
 
-    filename = 'Fig11.eps'
-    os.rename(filename, filename[:5] + 'a' + filename[5:])
+    filename = PARENT_FOLDER + 'Fig11' + FILE_EXT
+    os.rename(filename, filename[:19] + 'a' + filename[19:])
 
     # Figure 11 (b).
     man_count = pd.read_excel(('counting/manual_count/'
@@ -544,8 +549,8 @@ def figure_11():
     _aux_fig_11_(man_count, wusem_count, water_count, hwater_count,
                  radii_best=(10, 14), seed_best=5)
 
-    filename = 'Fig11.eps'
-    os.rename(filename, filename[:5] + 'b' + filename[5:])
+    filename = PARENT_FOLDER + 'Fig11' + FILE_EXT
+    os.rename(filename, filename[:19] + 'b' + filename[19:])
 
     return None
 
@@ -558,7 +563,7 @@ def figure_12():
     """
 
     image = imread(('figures/orig_figures/dataset_01/Kr-78_4,5min/'
-                    'K90_incid/K90_incid4,5min_3.bmp'), as_grey=True)
+                    'K90_incid/K90_incid4,5min_3.bmp'), as_gray=True)
 
     best_arg = (10, 20)
 
@@ -570,13 +575,13 @@ def figure_12():
     # Figure 12 (a).
     plt.figure(figsize=(15, 10))
     plt.imshow(labels, cmap='nipy_spectral')
-    plt.savefig('Fig12a.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig12a' + FILE_EXT, bbox_inches='tight')
 
 
     # Figure 12 (b).
     plt.figure(figsize=(15, 10))
     plt.imshow(objects, cmap='magma')
-    plt.savefig('Fig12b.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig12b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -644,7 +649,7 @@ def figure_13():
                  color=dedx_color)
     ax_dedx.set_ylabel('Electronic dE/dx (keV/$\mu m$)')
 
-    plt.savefig('Fig13a.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig13a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 13 (b).
     fig, ax = plt.subplots(figsize=(15, 10))
@@ -674,7 +679,7 @@ def figure_13():
                  color=dedx_color)
     ax_dedx.set_ylabel('Electronic dE/dx (keV/$\mu m$)')
 
-    plt.savefig('Fig13b.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig13b' + FILE_EXT, bbox_inches='tight')
 
     # Figure 13 (c).
     fig, ax = plt.subplots(figsize=(15, 10))
@@ -707,7 +712,7 @@ def figure_13():
                  color=dedx_color)
     ax_dedx.set_ylabel('Electronic dE/dx (keV/$\mu m$)')
 
-    plt.savefig('Fig13c.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig13c' + FILE_EXT, bbox_inches='tight')
 
     # Figure 13 (d).
     fig, ax = plt.subplots(figsize=(15, 10))
@@ -737,7 +742,7 @@ def figure_13():
                  color=dedx_color)
     ax_dedx.set_ylabel('Electronic dE/dx (keV/$\mu m$)')
 
-    plt.savefig('Fig13d.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig13d' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -754,14 +759,14 @@ def figure_14():
     """
 
     image = imread('figures/orig_figures/dataset_02/FT-Lab_19.07.390.MAG1.jpg',
-                   as_grey=True)
+                   as_gray=True)
 
     # Figure 14 (a).
     img_bin = binary_fill_holes(image < threshold_isodata(image))
 
     plt.figure(figsize=(15, 10))
     plt.imshow(img_bin, cmap='gray')
-    plt.savefig('Fig14a.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig14a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 14 (b).
     img_labels, _, _ = ds.segmentation_wusem(img_bin,
@@ -775,7 +780,7 @@ def figure_14():
 
     plt.figure(figsize=(15, 10))
     plt.imshow(img_numbers, cmap='gray')
-    plt.savefig('Fig14b.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig14b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -824,8 +829,8 @@ def figure_15():
             'MAG2': wusem_count.query('image > 9')}
 
     # separating best candidates for each magnification.
-    hwaterbest_mag1 = hwater['MAG1'][(hwater['MAG1']['seed'] == 5)]
-    hwaterbest_mag2 = hwater['MAG2'][(hwater['MAG2']['seed'] == 10)]
+    hwaterbest_mag1 = hwater['MAG1'][(hwater['MAG1']['seed'] == 19)]
+    hwaterbest_mag2 = hwater['MAG2'][(hwater['MAG2']['seed'] == 23)]
 
     hwater_best = {'MAG1': hwaterbest_mag1, 'MAG2': hwaterbest_mag2}
 
@@ -911,7 +916,7 @@ def figure_15():
 
         ax[0].set_ylabel('Tracks counted')
 
-    plt.savefig('Fig15a.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig15a' + FILE_EXT, bbox_inches='tight')
 
     # Figure 15 (b).
     fig, ax = plt.subplots(figsize=(16, 10))
@@ -953,7 +958,7 @@ def figure_15():
     # classic watershed
     fit_water = np.polyfit(aux_manual, aux_water, deg=1)
     fit_fn_water = np.poly1d(fit_water)
-    ax.plot(x_fit, fit_fn_water(x_fit), 
+    ax.plot(x_fit, fit_fn_water(x_fit),
             linewidth=LINEWIDTH,
             color=water_color)
 
@@ -979,14 +984,14 @@ def figure_15():
     ax.legend(handles=[sample[0], sample[1]],
               loc='lower right', ncol=1, frameon=False)
 
-    plt.savefig('Fig15b.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig15b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
 
-def figure_17():
+def figure_16():
     """
-    Figure 17. When using suitable input parameters, WUSEM may perform
+    Figure 16. When using suitable input parameters, WUSEM may perform
     better in certain regions where the classic watershed does not
     return reliable results. For instance, the highlighted region in (a)
     presents three tracks. WUSEM separates them correctly, but the region
@@ -996,36 +1001,40 @@ def figure_17():
     real number (four tracks). Left: input photomicrographs with
     highlighted regions. Center: tracks separated using WUSEM. Right:
     tracks separated using classic watershed. Parameters for WUSEM
-    algorithm: initial_radius = 15, delta_radius = 4.
+    algorithm: (a) initial_radius = 15, delta_radius = 4;
+    (b) initial_radius = 20, delta_radius = 14.
     """
 
-    # Figure 17 (a), right.
+    # Figure 16 (a), right.
     image = imread('figures/orig_figures/dataset_01/Kr-78_4,5min/K0_incid/K0_incid4,5min_2.bmp',
-                   as_grey=True)
+                   as_gray=True)
     thresh = threshold_isodata(image)
     img_bin = binary_fill_holes(image < thresh)
     img_labels, num_objects, _ = ds.segmentation_wusem(img_bin,
                                                        initial_radius=15,
                                                        delta_radius=4)
+    img_labels = ds.clear_rd_border(img_labels)
     img_number = ds.enumerate_objects(image, img_labels, font_size=25)
 
     plt.figure(figsize=(15, 10))
     plt.imshow(img_number)
-    plt.savefig('Fig17a.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig16a' + FILE_EXT, bbox_inches='tight')
 
-    # Figure 17 (b), right.
-    image = imread('figures/orig_figures/dataset_01/Kr-78_4,5min/K0_incid/K0_incid4,5min_5.bmp',
-                   as_grey=True)
+    # Figure 16 (b), right.
+    image = imread('figures/orig_figures/dataset_01/Kr-78_8,5min/K90_incid/K90_incid8,5min_1.bmp',
+                   as_gray=True)
     thresh = threshold_isodata(image)
     img_bin = binary_fill_holes(image < thresh)
     img_labels, num_objects, _ = ds.segmentation_wusem(img_bin,
-                                                       initial_radius=15,
-                                                       delta_radius=4)
+                                                       initial_radius=20,
+                                                       delta_radius=14)
+    img_labels = ds.clear_rd_border(img_labels)
     img_number = ds.enumerate_objects(image, img_labels, font_size=25)
 
     plt.figure(figsize=(15, 10))
     plt.imshow(img_number)
-    plt.savefig('Fig17b.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig16b' + FILE_EXT, bbox_inches='tight')
+
 
     return None
 
@@ -1076,7 +1085,7 @@ def figure_sup1():
                         '18', '20'))
 
     fig.colorbar(image, ax=ax, orientation='vertical')
-    plt.savefig('FigSup1a.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'FigSup1a' + FILE_EXT, bbox_inches='tight')
 
     # Supplementary Figure 1 (b).
     fig, ax = plt.subplots(figsize=(12, 12))
@@ -1091,7 +1100,7 @@ def figure_sup1():
                         '18', '20'))
 
     fig.colorbar(image, ax=ax, orientation='vertical')
-    plt.savefig('FigSup1b.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'FigSup1b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -1116,9 +1125,9 @@ def figure_sup2():
                    'K90_incid4,5min_1_track_21.eps']
 
     # Supplementary Figure 2, from (a) to (i).
-    output_files = ['FigSup2a.eps', 'FigSup2b.eps', 'FigSup2c.eps',
-                    'FigSup2d.eps', 'FigSup2e.eps', 'FigSup2f.eps',
-                    'FigSup2g.eps', 'FigSup2h.eps', 'FigSup2i.eps']
+    output_files = [PARENT_FOLDER + 'FigSup2a' + FILE_EXT, PARENT_FOLDER + 'FigSup2b' + FILE_EXT, PARENT_FOLDER + 'FigSup2c' + FILE_EXT,
+                    PARENT_FOLDER + 'FigSup2d' + FILE_EXT, PARENT_FOLDER + 'FigSup2e' + FILE_EXT, PARENT_FOLDER + 'FigSup2f' + FILE_EXT,
+                    PARENT_FOLDER + 'FigSup2g' + FILE_EXT, PARENT_FOLDER + 'FigSup2h' + FILE_EXT, PARENT_FOLDER + 'FigSup2i' + FILE_EXT]
 
     for idx, name in enumerate(input_files):
         os.rename(src=name, dst=output_files[idx])
@@ -1136,7 +1145,7 @@ def figure_sup3():
 
     image = imread(('figures/orig_figures/dataset_02/'
                     'FT-Lab_19.07.390.MAG1.jpg'),
-                    as_grey=True)
+                   as_gray=True)
 
     imgbin_wb = binary_fill_holes(image < threshold_isodata(image))
     imgbin_nb = clear_border(binary_fill_holes(image <
@@ -1145,12 +1154,12 @@ def figure_sup3():
     # Supplementary Figure 3 (a).
     plt.figure(figsize=(15, 10))
     plt.imshow(imgbin_wb, cmap='gray')
-    plt.savefig('FigSup3a.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'FigSup3a' + FILE_EXT, bbox_inches='tight')
 
     # Supplementary  Figure 3 (b).
     plt.figure(figsize=(15, 10))
     plt.imshow(imgbin_nb, cmap='gray')
-    plt.savefig('FigSup3b.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'FigSup3b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -1199,7 +1208,7 @@ def figure_sup4():
                         '20'))
 
     fig.colorbar(image, ax=ax, orientation='vertical')
-    plt.savefig('FigSup4a.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'FigSup4a' + FILE_EXT, bbox_inches='tight')
 
     # Supplementary Figure 4 (b).
     fig, ax = plt.subplots(figsize=(12, 12))
@@ -1214,7 +1223,7 @@ def figure_sup4():
                         '20'))
 
     fig.colorbar(image, ax=ax, orientation='vertical')
-    plt.savefig('FigSup4b.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'FigSup4b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -1283,7 +1292,7 @@ def figure_sup5():
     ax.set_xlim([5, 25])
     ax.set_ylim([-1, 100])
 
-    plt.savefig('FigSup5a.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'FigSup5a' + FILE_EXT, bbox_inches='tight')
 
     # Supplementary Figure 5 (b).
     fig, ax = plt.subplots(figsize=(15, 10))
@@ -1314,7 +1323,7 @@ def figure_sup5():
     ax.set_xlim([5, 25])
     ax.set_ylim([-1, 100])
 
-    plt.savefig('FigSup5b.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'FigSup5b' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -1356,7 +1365,7 @@ def _aux_fig_10_(man_count, wusem_count, water_count, hwater_count,
                     '#31688e', '#26828e', '#35b779',
                     '#6ece58', '#b5de2b', '#fde725']
 
-    box_colors = []    
+    box_colors = []
     for color in wusem_colors:
         box_colors.append([manual_color, water_color, hwater_color,
                            color])
@@ -1434,7 +1443,7 @@ def _aux_fig_10_(man_count, wusem_count, water_count, hwater_count,
         if x_labels[idx] in ['K0']:
             ax[idx].set_ylabel('Tracks counted')
 
-    plt.savefig('Fig10.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig10' + FILE_EXT, bbox_inches='tight')
 
     return None
 
@@ -1536,6 +1545,6 @@ def _aux_fig_11_(man_count, wusem_count, water_count, hwater_count,
               fontsize=FONTSIZE, loc='lower right', ncol=1,
               frameon=False)
 
-    plt.savefig('Fig11.eps', bbox_inches='tight')
+    plt.savefig(PARENT_FOLDER + 'Fig11' + FILE_EXT, bbox_inches='tight')
 
     return None

@@ -1,0 +1,8 @@
+# Ignoring folder `figures`. A very heavy one :)
+figures/
+
+# Ignoring other stuff.
+.ipynb_checkpoints/
+__pycache__/
+
+
